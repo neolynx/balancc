@@ -1,0 +1,7 @@
+
+balancc - load balancer
+=======================
+
+for use with distcc.
+
+inspired by the dmucs load balancer.
