@@ -107,7 +107,6 @@ bool SocketHandler::Connect( )
 
         return ( connect( sd, (struct sockaddr*) &addr, sizeof( addr )) == 0 );
       }
-
     case UNIX:
       {
         struct sockaddr_un addr;
@@ -146,6 +145,7 @@ bool SocketHandler::StartServer( SocketType sockettype, int port, const char *so
   if( sd )
     return false;
 
+  int backlog = 15;
   this->role = SERVER;
   this->sockettype = sockettype;
   this->port = port;
@@ -160,38 +160,34 @@ bool SocketHandler::StartServer( SocketType sockettype, int port, const char *so
   int yes = 1;
   if( setsockopt( sd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(  int )) != 0 )
   {
-    close( sd );
-    sd = 0;
     printf( "setsockopt failed\n" );
-    return false;
+    goto errorexit;
   }
 
   if( !Bind( ))
   {
-    close( sd );
-    sd = 0;
     printf( "bind failed\n" );
-    return false;
+    goto errorexit;
   }
 
-  int backlog = 15;
   if( listen( sd, backlog ) != 0 )
   {
-    close( sd );
-    sd = 0;
     printf( "listen failed\n" );
-    return false;
+    goto errorexit;
   }
 
   up = true;
   if( pthread_create( &handler, NULL, run, (void *) this ) != 0 )
   {
-    close( sd );
-    sd = 0;
     printf( "thread creation failed\n" );
-    return false;
+    goto errorexit;
   }
   return true;
+
+errorexit:
+  close( sd );
+  sd = 0;
+  return false;
 }
 
 bool SocketHandler::StartClient( )
@@ -199,7 +195,7 @@ bool SocketHandler::StartClient( )
   if( sd )
     return false;
 
-  if( !CreateSocket( )) // !autoconnect &&
+  if( !CreateSocket( ))
     return false;
 
   if( Connect( ))
@@ -207,21 +203,35 @@ bool SocketHandler::StartClient( )
     connected = true;
     Connected( sd );
   }
+  else if( !autoreconnect )
+  {
+    printf( "Connection refused\n" );
+    goto errorexit;
+  }
 
   up = true;
   if( pthread_create( &handler, NULL, run, (void*) this ) != 0 )
   {
-    return false;
+    printf( "thread creation failed\n" );
+    goto errorexit;
   }
   return true;
+
+errorexit:
+  close( sd );
+  sd = 0;
+  return false;
 }
 
 void SocketHandler::Stop( )
 {
-  if( sd )
+  if( up )
   {
     up = false;
     pthread_join( handler, NULL);
+  }
+  if( sd )
+  {
     close( sd );
     sd = 0;
   }
@@ -241,12 +251,14 @@ void SocketHandler::Run( )
   fd_set fds;
   fd_set tmp_fds;
   char buf[2048];
+  int readpos = 0;
+  int writepos = 0;
 
   FD_ZERO( &fds );
   //if( role == SERVER )
   //{
-    fdmax = sd;
-    FD_SET ( sd, &fds );
+  fdmax = sd;
+  FD_SET ( sd, &fds );
   //}
 
   while( up )
@@ -311,7 +323,7 @@ void SocketHandler::Run( )
             }
             else // handle data
             {
-              int len = recv( i, buf, sizeof( buf ), 0 );
+              int len = recv( i, buf + writepos, sizeof( buf ) - writepos, 0 );
               if( len <= 0 )
               {
                 if( len != 0 )
@@ -322,7 +334,16 @@ void SocketHandler::Run( )
               }
               else
               {
-                DataReceived( i, buf, len );
+                writepos += len;
+                if( writepos == sizeof( buf ))
+                  writepos = 0;
+                while( readpos != writepos && up ) // handle all data
+                {
+                  readpos += DataReceived( i, buf + readpos, len );
+                  if( readpos == sizeof( buf ))
+                    readpos = 0;
+                }
+                printf( "writepos: %d, readpos: %d\n", writepos, readpos );
               }
             }
           } // if( FD_ISSET( i, &tmp_fds ))
@@ -332,7 +353,7 @@ void SocketHandler::Run( )
       case CLIENT:
         if( FD_ISSET( sd, &tmp_fds ))
         {
-          int len = recv( sd, buf, sizeof( buf ), 0 );
+          int len = recv( sd, buf + writepos, sizeof( buf ) - writepos, 0 );
           if( len <= 0 )
           {
             if( len != 0 )
@@ -357,7 +378,15 @@ void SocketHandler::Run( )
           }
           else
           {
-            DataReceived( sd, buf, len );
+            writepos += len;
+            if( writepos == sizeof( buf ))
+              writepos = 0;
+            while( readpos != writepos && up ) // handle all data
+            {
+              readpos += DataReceived( sd, buf + readpos, len );
+              if( readpos == sizeof( buf ))
+                readpos = 0;
+            }
           }
         }
         break;
@@ -413,5 +442,12 @@ bool SocketHandler::Lock( )
 bool SocketHandler::Unlock( )
 {
   pthread_mutex_unlock( &mutex );
+}
+
+void SocketHandler::Dump( const char *buffer, int length ) const
+{
+  for( int i = 0; i < length; i++ )
+    printf( "%02x ", buffer[i] );
+  printf( "\n" );
 }
 

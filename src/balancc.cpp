@@ -13,6 +13,7 @@
 #include <sstream>
 #include <errno.h>
 #include <sys/wait.h>
+#include <sys/stat.h> // chmod
 
 #include "BalanccClient.h"
 #include "SocketClient.h"
@@ -93,14 +94,19 @@ int main( int argc, char *argv[] )
     if( !client->ConnectTCP( servername, serverport, true ))
     {
       printf( "connect failed\n" );
+      //FIXME cleanup
+      return -1;
     }
 
     server = new SocketServer( *client );
     if( !server->StartUnix( BALANCC_SOCK ))
     {
       printf( "socket server failed to start\n" );
+      //FIXME cleanup
+      return -1;
     }
 
+    chmod( BALANCC_SOCK, 0666 );
     client->SetSocketServer( server );
 
     while( client->isUp( ))
@@ -117,9 +123,7 @@ int main( int argc, char *argv[] )
     socketclient->ConnectUnix( BALANCC_SOCK );
     if( socketclient->isConnected( ))
     {
-      printf( "getting host\n" );
       host = socketclient->GetHost( );
-      printf( "done\n" );
     }
     else
       printf( "unable to connect to %s\n", BALANCC_SOCK );

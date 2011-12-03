@@ -22,9 +22,9 @@ class BalanccClient : public SocketHandler
     void SendLoad( );
 
   protected:
-    virtual void Connected  ( int client );
+    virtual void Connected   ( int client );
     virtual void Disconnected( int client, bool error );
-    virtual void DataReceived( int client, const char *buffer, int length );
+    virtual int  DataReceived( int client, const char *buffer, int length );
 
   private:
     SocketServer *socketserver;

@@ -48,7 +48,7 @@ class SocketHandler
   public:
     virtual ~SocketHandler( );
 
-    bool StartTCP   ( int port )     { return StartServer  ( TCP, port, NULL ); }
+    bool StartTCP   ( int port )           { return StartServer  ( TCP, port, NULL ); }
     bool StartUnix  ( const char *socket ) { return StartServer  ( UNIX, 0, socket ); }
     bool ConnectTCP ( const char *host, int port, bool autoreconnect = false );
     bool ConnectUnix( const char *socket, bool autoreconnect = false);
@@ -68,10 +68,12 @@ class SocketHandler
     bool Lock( );
     bool Unlock( );
 
+    void Dump( const char *buffer, int length ) const;
+
     // Callbacks
     virtual void Connected( int client ) = 0;
     virtual void Disconnected( int client, bool error ) = 0;
-    virtual void DataReceived( int client, const char *buf, int len ) = 0;
+    virtual int  DataReceived( int client, const char *buf, int len ) = 0;
 };
 
 #endif

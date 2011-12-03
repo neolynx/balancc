@@ -52,7 +52,7 @@ void BalanccClient::SetSocketServer( SocketServer *socketserver )
 void BalanccClient::Connected( int client )
 {
   char buf[128];
-  snprintf( buf, sizeof( buf ), "host %s %d\n", hostname, ncpu );
+  snprintf( buf, sizeof( buf ), "host %s %d", hostname, ncpu );
   if( !Send( buf, strlen( buf ) + 1 ))
   {
     printf( "error sending hostname\n" );
@@ -65,13 +65,13 @@ void BalanccClient::Disconnected( int client, bool error )
   //  printf( "%d: client disconnected, error=%d\n", client, error );
 }
 
-void BalanccClient::DataReceived( int client, const char *buffer, int length )
+int BalanccClient::DataReceived( int client, const char *buffer, int length )
 {
-  //  printf( "%d: got %d bytes\n", client, length );
   if( length == 2 && buffer[0] == '?' )
     SendLoad( );
   else if( socketserver )
     socketserver->Reply( buffer, length );
+  return strlen( buffer ) + 1;
 }
 
 void BalanccClient::SendLoad( )
@@ -83,9 +83,10 @@ void BalanccClient::SendLoad( )
   }
 
   char buf[32];
-  snprintf( buf, sizeof( buf ), "load %f\n", load[0] );
+  snprintf( buf, sizeof( buf ), "load %f", load[0] );
   if( !Send( buf, strlen( buf ) + 1 ))
   {
     printf( "error sending load avg\n" );
   }
 }
+

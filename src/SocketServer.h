@@ -10,6 +10,8 @@
 
 #include "SocketHandler.h"
 
+#include <deque>
+
 class BalanccClient;
 
 class SocketServer : public SocketHandler
@@ -21,13 +23,13 @@ class SocketServer : public SocketHandler
     bool Reply( const char *buffer, int length );
 
   protected:
-    virtual void Connected  ( int client );
+    virtual void Connected   ( int client );
     virtual void Disconnected( int client, bool error );
-    virtual void DataReceived( int client, const char *buffer, int length );
+    virtual int  DataReceived( int client, const char *buffer, int length );
 
   private:
     BalanccClient &balancclient;
-    int current;
+    std::deque<int> requests;
 };
 
 #endif

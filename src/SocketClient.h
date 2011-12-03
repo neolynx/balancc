@@ -18,12 +18,12 @@ class SocketClient : public SocketHandler
     SocketClient( bool self = false );
     virtual ~SocketClient( );
 
-    std::string &GetHost( );
+    const std::string &GetHost( );
 
   protected:
-    virtual void Connected  ( int client );
+    virtual void Connected   ( int client );
     virtual void Disconnected( int client, bool error );
-    virtual void DataReceived( int client, const char *buffer, int length );
+    virtual int  DataReceived( int client, const char *buffer, int length );
 
   private:
     std::string host;

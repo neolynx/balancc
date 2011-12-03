@@ -34,7 +34,7 @@ class BalanccServer : public SocketHandler
     // Callbacks
     virtual void Connected   ( int client );
     virtual void Disconnected( int client, bool error );
-    virtual void DataReceived( int client, const char *buffer, int length );
+    virtual int  DataReceived( int client, const char *buffer, int length );
 };
 
 #endif
