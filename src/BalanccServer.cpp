@@ -78,14 +78,14 @@ void BalanccServer::Polling( )
   Lock( );
   for( iterator_hosts i = hosts.begin( ); i != hosts.end( ); i++ )
   {
-    Send( (*i).first, "?\n", 3 ); // ?\n\0
+    Send( (*i).first, "?\n", 2 );
   }
   Unlock( );
 }
 
 void BalanccServer::HandleMessage( const int client, const SocketHandler::Message &msg )
 {
-  printf( "BalanccServer got message from %d: %s\n", client, msg.getLine( ).c_str( ));
+  //printf( "BalanccServer got message from %d: %s\n", client, msg.getLine( ).c_str( ));
   const char *buffer = msg.getLine( ).c_str( );
   int length = msg.getLine( ).length( );
   //Dump( buffer, length );
@@ -98,7 +98,7 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     Slot slot( client, id );
     std::string host = GetHost( slot );
     host += "\n";
-    Send( client, host.c_str( ), host.length( ) + 1 ); // include \0
+    Send( client, host.c_str( ), host.length( ));
     return;
   }
 
@@ -109,7 +109,7 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     Slot slot( client, id );
     std::string host = GetHost( slot, true );
     host += "\n";
-    Send( client, host.c_str( ), host.length( ) + 1 ); // include \0
+    Send( client, host.c_str( ), host.length( ));
     return;
   }
   r = sscanf( buffer, "done %d", &id );
@@ -160,6 +160,5 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
   }
 
   printf( "unknown message: %s\n", buffer );
-  up = false;
 }
 

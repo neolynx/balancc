@@ -53,7 +53,7 @@ void BalanccClient::Connected( int client )
 {
   char buf[128];
   snprintf( buf, sizeof( buf ), "host %s %d\n", hostname, ncpu );
-  if( !Send( buf, strlen( buf ) + 1 ))
+  if( !Send( buf, strlen( buf )))
   {
     printf( "error sending hostname\n" );
   }
@@ -68,14 +68,14 @@ void BalanccClient::Disconnected( int client, bool error )
 void BalanccClient::SendLoad( )
 {
   double load[3];
-  if (getloadavg(load, 3) == -1)
+  if( getloadavg(load, 3) == -1 )
   {
     printf( "cannot get loadavg\n" );
   }
 
   char buf[32];
   snprintf( buf, sizeof( buf ), "load %f\n", load[0] );
-  if( !Send( buf, strlen( buf ) + 1 ))
+  if( !Send( buf, strlen( buf )))
   {
     printf( "error sending load avg\n" );
   }
@@ -86,6 +86,10 @@ void BalanccClient::HandleMessage( const int client, const SocketHandler::Messag
   if( msg.getLine( ) == "?" )
     SendLoad( );
   else if( socketserver )
-    socketserver->Reply( msg.getLine( ).c_str( ), msg.getLine( ).length( ) + 1 ); // include \0
+  {
+    std::string host = msg.getLine( );
+    host += "\n";
+    socketserver->Reply( host.c_str( ), host.length( ));
+  }
 }
 

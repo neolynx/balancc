@@ -30,7 +30,7 @@ void SocketServer::Disconnected( int client, bool error )
   //  printf( "%d: client disconnected, error=%d\n", client, error );
   char buf[64];
   snprintf( buf, sizeof( buf ), "done %d\n", client );
-  balancclient.Send( buf, strlen( buf ) + 1 ); // include \0
+  balancclient.Send( buf, strlen( buf ));
   Lock( );
   for( std::deque<int>::iterator i = requests.begin( ); i != requests.end( ); i++ )
     if( *i == client )
@@ -44,7 +44,6 @@ void SocketServer::Disconnected( int client, bool error )
 bool SocketServer::Reply( const char *buffer, int length )
 {
   bool ret = false;
-  //printf( "got reply\n" );
   Lock( );
   if( !requests.empty( ))
   {
@@ -64,7 +63,7 @@ void SocketServer::HandleMessage( const int client, const SocketHandler::Message
     Unlock( );
     char buf[64];
     snprintf( buf, sizeof( buf ), "get %d\n", client );
-    balancclient.Send( buf, strlen( buf ) + 1 ); // include \0
+    balancclient.Send( buf, strlen( buf ));
   }
   else if( msg.getLine( ) == "+get" )
   {
@@ -73,12 +72,11 @@ void SocketServer::HandleMessage( const int client, const SocketHandler::Message
     Unlock( );
     char buf[64];
     snprintf( buf, sizeof( buf ), "+get %d\n", client );
-    balancclient.Send( buf, strlen( buf ) + 1 ); // include \0
+    balancclient.Send( buf, strlen( buf ));
   }
   else
   {
     printf( "unknown message: %s\n", msg.getLine( ).c_str( ));
-    up = false;
   }
 }
 

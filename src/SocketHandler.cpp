@@ -226,10 +226,8 @@ errorexit:
 void SocketHandler::Stop( )
 {
   if( up )
-  {
     up = false;
-    pthread_join( handler, NULL);
-  }
+  pthread_join( handler, NULL);
   if( sd )
   {
     close( sd );
@@ -419,7 +417,7 @@ void SocketHandler::Run( )
               readpos += already_read;
               if( readpos == sizeof( buf ))
                 readpos = 0;
-              printf( "writepos: %d, readpos: %d\n", writepos, readpos );
+              //printf( "writepos: %d, readpos: %d\n", writepos, readpos );
             }
           }
         }
@@ -494,8 +492,8 @@ int SocketHandler::Message::AccumulateData( const char *buffer, int length )
 {
   bool end = false;
   int i;
-  printf( "Message acc: %d %s\n", length, buffer );
-  Dump( buffer, length );
+  //  printf( "accumulating data: " );
+  //  Dump( buffer, length );
   for( i = 0; i < length; i++ )
     if( buffer[i] == '\0' ||  buffer[i] == '\n' ||  buffer[i] == '\r' )
       end = true;
@@ -509,8 +507,6 @@ int SocketHandler::Message::AccumulateData( const char *buffer, int length )
   {
     Submit( );
   }
-  printf( "line: %d %s\n", line.length(), line.c_str( ));
-  printf( "ate %d\n", i );
   return i;
 }
 

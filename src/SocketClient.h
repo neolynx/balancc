@@ -11,6 +11,7 @@
 #include "SocketHandler.h"
 
 #include <string>
+#include <semaphore.h>
 
 class SocketClient : public SocketHandler
 {
@@ -26,6 +27,7 @@ class SocketClient : public SocketHandler
     virtual void HandleMessage( const int client, const Message &msg );
 
   private:
+    sem_t host_available;
     std::string host;
     bool self;
 };
