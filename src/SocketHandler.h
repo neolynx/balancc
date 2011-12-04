@@ -9,6 +9,7 @@
 #define _SocketHandler_
 
 #include <pthread.h>
+#include <string>
 
 class SocketHandler
 {
@@ -63,17 +64,36 @@ class SocketHandler
   protected:
     bool up;
 
+    class Message
+    {
+      private:
+        bool submitted;
+        std::string line;
+      public:
+        Message( ) { line = ""; submitted = false; }
+        virtual ~Message( ) { };
+        virtual int AccumulateData( const char *buffer, int length );
+        void Submit( ) { submitted = true; };
+        bool isSubmitted( ) { return submitted; }
+        const std::string getLine( ) const { return line; }
+    };
+
     SocketHandler( );
-    virtual void Run( );
+    void Run( );
     bool Lock( );
     bool Unlock( );
 
-    void Dump( const char *buffer, int length ) const;
+    static void Dump( const char *buffer, int length );
+
+    virtual Message *CreateMessage( ) const;
 
     // Callbacks
     virtual void Connected( int client ) = 0;
     virtual void Disconnected( int client, bool error ) = 0;
-    virtual int  DataReceived( int client, const char *buf, int len ) = 0;
+    virtual void HandleMessage( const int client, const Message &msg ) = 0;
+
+  private:
+    Message *message;
 };
 
 #endif

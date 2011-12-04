@@ -29,7 +29,7 @@ void SocketServer::Disconnected( int client, bool error )
 {
   //  printf( "%d: client disconnected, error=%d\n", client, error );
   char buf[64];
-  snprintf( buf, sizeof( buf ), "done %d", client );
+  snprintf( buf, sizeof( buf ), "done %d\n", client );
   balancclient.Send( buf, strlen( buf ) + 1 ); // include \0
   Lock( );
   for( std::deque<int>::iterator i = requests.begin( ); i != requests.end( ); i++ )
@@ -39,36 +39,6 @@ void SocketServer::Disconnected( int client, bool error )
       break;
     }
   Unlock( );
-}
-
-int SocketServer::DataReceived( int client, const char *buffer, int length )
-{
-  int len = 0;
-  if( strncmp( buffer, "get", 4 ) == 0 )
-  {
-    len = 4;
-    Lock( );
-    requests.push_back( client );
-    Unlock( );
-    char buf[64];
-    snprintf( buf, sizeof( buf ), "get %d", client );
-    balancclient.Send( buf, strlen( buf ) + 1 ); // include \0
-  }
-  else if( strncmp( buffer, "+get", 5 ) == 0 )
-  {
-    len = 5;
-    Lock( );
-    requests.push_back( client );
-    Unlock( );
-    char buf[64];
-    snprintf( buf, sizeof( buf ), "+get %d", client );
-    balancclient.Send( buf, strlen( buf ) + 1 ); // include \0
-  }
-  else
-  {
-    printf( "unknown message: %s\n", buffer );
-  }
-  return len;
 }
 
 bool SocketServer::Reply( const char *buffer, int length )
@@ -83,5 +53,32 @@ bool SocketServer::Reply( const char *buffer, int length )
   }
   Unlock( );
   return ret;
+}
+
+void SocketServer::HandleMessage( const int client, const SocketHandler::Message &msg )
+{
+  if( msg.getLine( ) == "get" )
+  {
+    Lock( );
+    requests.push_back( client );
+    Unlock( );
+    char buf[64];
+    snprintf( buf, sizeof( buf ), "get %d\n", client );
+    balancclient.Send( buf, strlen( buf ) + 1 ); // include \0
+  }
+  else if( msg.getLine( ) == "+get" )
+  {
+    Lock( );
+    requests.push_back( client );
+    Unlock( );
+    char buf[64];
+    snprintf( buf, sizeof( buf ), "+get %d\n", client );
+    balancclient.Send( buf, strlen( buf ) + 1 ); // include \0
+  }
+  else
+  {
+    printf( "unknown message: %s\n", msg.getLine( ).c_str( ));
+    up = false;
+  }
 }
 

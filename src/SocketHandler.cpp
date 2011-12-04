@@ -17,7 +17,7 @@
 #include <string.h>     // memset
 #include <stdio.h>      // printf
 
-SocketHandler::SocketHandler() : up(false), connected(false), autoreconnect(false), sd(0)
+SocketHandler::SocketHandler() : up(false), connected(false), autoreconnect(false), sd(0), message(NULL)
 {
   pthread_mutex_init( &mutex, 0 );
 }
@@ -255,11 +255,8 @@ void SocketHandler::Run( )
   int writepos = 0;
 
   FD_ZERO( &fds );
-  //if( role == SERVER )
-  //{
   fdmax = sd;
   FD_SET ( sd, &fds );
-  //}
 
   while( up )
   {
@@ -337,13 +334,31 @@ void SocketHandler::Run( )
                 writepos += len;
                 if( writepos == sizeof( buf ))
                   writepos = 0;
+                int already_read;
                 while( readpos != writepos && up ) // handle all data
                 {
-                  readpos += DataReceived( i, buf + readpos, len );
+                  if( !message )
+                    message = CreateMessage( );
+
+                  already_read = message->AccumulateData( buf + readpos, len );
+                  if( already_read > len )
+                  {
+                    // FIXME: log
+                    already_read = len;
+                  }
+
+                  if( message->isSubmitted( ))
+                  {
+                    HandleMessage( i, *message );
+                    delete message;
+                    message = NULL;
+                  }
+                  len     -= already_read;
+                  readpos += already_read;
                   if( readpos == sizeof( buf ))
                     readpos = 0;
+                  //printf( "writepos: %d, readpos: %d\n", writepos, readpos );
                 }
-                printf( "writepos: %d, readpos: %d\n", writepos, readpos );
               }
             }
           } // if( FD_ISSET( i, &tmp_fds ))
@@ -381,11 +396,30 @@ void SocketHandler::Run( )
             writepos += len;
             if( writepos == sizeof( buf ))
               writepos = 0;
+            int already_read;
             while( readpos != writepos && up ) // handle all data
             {
-              readpos += DataReceived( sd, buf + readpos, len );
+              if( !message )
+                message = CreateMessage( );
+
+              already_read = message->AccumulateData( buf + readpos, len );
+              if( already_read > len )
+              {
+                // FIXME: log
+                already_read = len;
+              }
+
+              if( message->isSubmitted( ))
+              {
+                HandleMessage( sd, *message );
+                delete message;
+                message = NULL;
+              }
+              len     -= already_read;
+              readpos += already_read;
               if( readpos == sizeof( buf ))
                 readpos = 0;
+              printf( "writepos: %d, readpos: %d\n", writepos, readpos );
             }
           }
         }
@@ -444,10 +478,39 @@ bool SocketHandler::Unlock( )
   pthread_mutex_unlock( &mutex );
 }
 
-void SocketHandler::Dump( const char *buffer, int length ) const
+void SocketHandler::Dump( const char *buffer, int length )
 {
   for( int i = 0; i < length; i++ )
     printf( "%02x ", buffer[i] );
   printf( "\n" );
+}
+
+SocketHandler::Message *SocketHandler::CreateMessage( ) const
+{
+  return new Message( );
+}
+
+int SocketHandler::Message::AccumulateData( const char *buffer, int length )
+{
+  bool end = false;
+  int i;
+  printf( "Message acc: %d %s\n", length, buffer );
+  Dump( buffer, length );
+  for( i = 0; i < length; i++ )
+    if( buffer[i] == '\0' ||  buffer[i] == '\n' ||  buffer[i] == '\r' )
+      end = true;
+    else
+    {
+      if( end )
+        break;
+      line += buffer[i];
+    }
+  if( end )
+  {
+    Submit( );
+  }
+  printf( "line: %d %s\n", line.length(), line.c_str( ));
+  printf( "ate %d\n", i );
+  return i;
 }
 

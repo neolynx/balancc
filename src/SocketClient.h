@@ -23,7 +23,7 @@ class SocketClient : public SocketHandler
   protected:
     virtual void Connected   ( int client );
     virtual void Disconnected( int client, bool error );
-    virtual int  DataReceived( int client, const char *buffer, int length );
+    virtual void HandleMessage( const int client, const Message &msg );
 
   private:
     std::string host;

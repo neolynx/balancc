@@ -22,9 +22,9 @@ void SocketClient::Connected( int client )
   printf( "lock SocketClient::Connected\n" );
   Lock( );
   if( self )
-    Send( "+get", 5 );
+    Send( "+get\n", 6 );
   else
-    Send( "get", 4 );
+    Send( "get\n", 5 );
 }
 
 void SocketClient::Disconnected( int client, bool error )
@@ -34,22 +34,24 @@ void SocketClient::Disconnected( int client, bool error )
   Unlock( );
 }
 
-int SocketClient::DataReceived( int client, const char *buffer, int length )
-{
-  printf( "SocketClient %d: got %d bytes: %s\n", client, length, buffer );
-  if( length < 64 )
-    host = buffer;
-  else
-    printf( "strange response received\n" );
-  Unlock( );
-  return host.length( ) + 1;
-}
-
 const std::string &SocketClient::GetHost( )
 {
   printf( "lock &SocketClient::GetHost\n" );
   Lock( );
   up = false;
+  printf( "returning &SocketClient::GetHost\n" );
   return host;
+}
+
+void SocketClient::HandleMessage( const int client, const SocketHandler::Message &msg )
+{
+//  printf( "SocketClient %d: got %d bytes %s\n", client, msg.getLine( ).length( ), msg.getLine( ).c_str( ));
+//  if( msg.getLine( ).length( ) < 64 && msg.getLine( ).length( ) > 0 )
+//  {
+//    host = msg.getLine( );
+//  }
+//  else
+    printf( "strange response received\n" );
+  Unlock( );
 }
 
