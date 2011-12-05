@@ -130,7 +130,7 @@ int main( int argc, char *argv[] )
     socketclient->Stop( );
     delete socketclient;
 
-    if( host == "" )
+    if( host == "!" || host == "" )
       host = "localhost";
     std::ostringstream tmp;
     tmp << "DISTCC_HOSTS=" << host;

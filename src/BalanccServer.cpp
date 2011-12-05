@@ -37,7 +37,7 @@ void BalanccServer::Disconnected( int client, bool error )
 
 std::string BalanccServer::GetHost( Slot slot, bool self )
 {
-  std::string host = "";
+  std::string host = "!";
   Lock( );
   float t, load = 1000.0;
   Host *h = NULL;
@@ -97,8 +97,9 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     printf( "host request with id %d:%d\n", client, id );
     Slot slot( client, id );
     std::string host = GetHost( slot );
-    host += "\n";
-    Send( client, host.c_str( ), host.length( ));
+    char buf[64];
+    snprintf( buf, sizeof( buf ), "%s %d\n", host.c_str( ), id );
+    Send( client, buf, strlen( buf ));
     return;
   }
 
@@ -108,8 +109,9 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     printf( "host request with id %d:%d\n", client, id );
     Slot slot( client, id );
     std::string host = GetHost( slot, true );
-    host += "\n";
-    Send( client, host.c_str( ), host.length( ));
+    char buf[64];
+    snprintf( buf, sizeof( buf ), "%s %d\n", host.c_str( ), id );
+    Send( client, buf, strlen( buf ));
     return;
   }
   r = sscanf( buffer, "done %d", &id );

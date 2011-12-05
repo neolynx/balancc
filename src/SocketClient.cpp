@@ -8,6 +8,8 @@
 #include "SocketClient.h"
 
 #include <stdio.h> // printf
+#include <errno.h> // errno
+#include <time.h>  // clock_gettime
 
 SocketClient::SocketClient( bool self ) : self(self)
 {
@@ -37,7 +39,26 @@ void SocketClient::Disconnected( int client, bool error )
 
 const std::string &SocketClient::GetHost( )
 {
-  sem_wait( &host_available );
+  struct timespec ts;
+  if( clock_gettime( CLOCK_REALTIME, &ts ) == -1 )
+  {
+    printf( "Error getting time\n" );
+    host = "!";
+    return host;
+  }
+  ts.tv_sec++;
+  int s;
+  while(( s = sem_timedwait( &host_available, &ts )) == -1 && errno == EINTR )
+    continue;       /* Restart if interrupted by handler */
+
+  if( s == -1 )
+  {
+    if( errno == ETIMEDOUT )
+      printf( "timeout\n" );
+    else
+      printf( "semaphore error\n" );
+    host = "!";
+  }
   return host;
 }
 

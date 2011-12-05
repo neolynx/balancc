@@ -87,9 +87,9 @@ void BalanccClient::HandleMessage( const int client, const SocketHandler::Messag
     SendLoad( );
   else if( socketserver )
   {
-    std::string host = msg.getLine( );
-    host += "\n";
-    socketserver->Reply( host.c_str( ), host.length( ));
+    std::string message = msg.getLine( );
+    message += "\n";
+    socketserver->Reply( message.c_str( ), message.length( ));
   }
 }
 

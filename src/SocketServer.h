@@ -10,7 +10,7 @@
 
 #include "SocketHandler.h"
 
-#include <deque>
+//#include <deque>
 
 class BalanccClient;
 
@@ -29,7 +29,7 @@ class SocketServer : public SocketHandler
 
   private:
     BalanccClient &balancclient;
-    std::deque<int> requests;
+ //   std::deque<int> requests;
 };
 
 #endif
