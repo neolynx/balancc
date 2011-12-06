@@ -29,7 +29,7 @@ void SocketServer::Disconnected( int client, bool error )
 {
   //  printf( "%d: client disconnected, error=%d\n", client, error );
   char buf[64];
-  snprintf( buf, sizeof( buf ), "done %d\n", client );
+  snprintf( buf, sizeof( buf ), "free %d\n", client );
   balancclient.Send( buf, strlen( buf ));
   //Lock( );
   //for( std::deque<int>::iterator i = requests.begin( ); i != requests.end( ); i++ )

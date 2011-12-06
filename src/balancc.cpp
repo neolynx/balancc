@@ -127,8 +127,6 @@ int main( int argc, char *argv[] )
     }
     else
       printf( "unable to connect to %s\n", BALANCC_SOCK );
-    socketclient->Stop( );
-    delete socketclient;
 
     if( host == "!" || host == "" )
       host = "localhost";
@@ -158,8 +156,10 @@ int main( int argc, char *argv[] )
         return -1;
       }
 
-      /* parent process -- just wait for the child */
+      // parent process
       wait( &status );
+      socketclient->Stop( );
+      delete socketclient;
 
       return WEXITSTATUS(status);
     }

@@ -28,7 +28,7 @@ AC_TYPE_UINT32_T
 
 # Checks for library functions.
 AC_FUNC_FORK
-AC_CHECK_FUNCS([gethostname memset putenv select socket strerror])
+AC_CHECK_FUNCS([clock_gettime gethostname memset putenv select socket strerror])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile])

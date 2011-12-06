@@ -7,7 +7,7 @@
 
 #include "BalanccServer.h"
 
-#include <stdio.h> // printf
+#include <stdio.h>  // printf
 #include <string.h> // strncmp
 
 #include "Host.h"
@@ -24,14 +24,20 @@ void BalanccServer::Connected( int client )
 void BalanccServer::Disconnected( int client, bool error )
 {
   //printf( "%d: client disconnected, error=%d\n", client, error );
-  if( hosts.find( client ) == hosts.end( ))
-  {
-    printf( "unknown client %d disconnected\n", client );
-    return;
-  }
   Lock( );
-  delete hosts[client];
-  hosts.erase( client );
+  if( hosts.find( client ) == hosts.end( ))
+    printf( "unknown client %d disconnected\n", client );
+  else
+  {
+    for( iterator_Slot i = assignment.begin( ); i != assignment.end( ); i++ )
+      if( i->first.client == client )
+      {
+        printf( "%d:%d slot destroyed: disconnect\n", i->first.client, i->first.id );
+        assignment.erase( i );
+      }
+    delete hosts[client];
+    hosts.erase( client );
+  }
   Unlock( );
 }
 
@@ -57,18 +63,21 @@ std::string BalanccServer::GetHost( Slot slot, bool self )
   if( h )
   {
     if( assignment.find( slot ) != assignment.end( ))
-      printf( "slot already assigned\n" );
+      printf( "%d:%d slot already assigned\n", slot.client, slot.id );
     else
     {
       if( !h->Assign( ))
-        printf( "host assignmenet failed\n" );
+        printf( "%d:%d host assignmenet failed\n", slot.client, slot.id );
       else
       {
         assignment[slot] = h;
         host = h->GetName( );
+        printf( "%d:%d assigned to %s\n", slot.client, slot.id, host.c_str( ));
       }
     }
   }
+  else
+    printf( "%d:%d all hosts busy\n", slot.client, slot.id );
   Unlock( );
   return host;
 }
@@ -94,7 +103,7 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
   r = sscanf( buffer, "get %d", &id );
   if( r == 1 )
   {
-    printf( "host request with id %d:%d\n", client, id );
+    //printf( "host request with id %d:%d\n", client, id );
     Slot slot( client, id );
     std::string host = GetHost( slot );
     char buf[64];
@@ -106,7 +115,7 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
   r = sscanf( buffer, "+get %d", &id ); // host request including self host
   if( r == 1 )
   {
-    printf( "host request with id %d:%d\n", client, id );
+    //printf( "host request with id %d:%d\n", client, id );
     Slot slot( client, id );
     std::string host = GetHost( slot, true );
     char buf[64];
@@ -114,17 +123,18 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     Send( client, buf, strlen( buf ));
     return;
   }
-  r = sscanf( buffer, "done %d", &id );
+  r = sscanf( buffer, "free %d", &id );
   if( r == 1 )
   {
-    printf( "host done, id %d:%d\n", client, id );
     Slot slot( client, id );
     Lock( );
-    if( assignment.find( slot ) == assignment.end( ))
-      printf( "host is not assigned\n" );
+    iterator_Slot i = assignment.find( slot );
+    if( i == assignment.end( ))
+      printf( "%d:%d cannot free: host is not assigned\n", slot.client, slot.id );
     else
     {
-      assignment[slot]->Release( );
+      printf( "%d:%d freed %s\n", slot.client, slot.id, (*i).second->GetName( ).c_str( ));
+      (*i).second->Release( );
       assignment.erase( slot );
     }
     Unlock( );
@@ -134,29 +144,27 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
   int cpus;
   char host[256];
   float load;
-  r = sscanf( buffer, "host %s %d", host, &cpus ); // FIXME: oberflow
+  r = sscanf( buffer, "host %s %d", host, &cpus ); // FIXME: overflow
   if( r == 2 )
   {
     //printf( "%d: got host %s, %d CPUs\n", client, host, cpus );
-    if( hosts.find( client ) != hosts.end( ))
-    {
-      printf( "%d: host already registered\n", client );
-      return;
-    }
     Lock( );
-    hosts[client] = new Host( host, cpus );
+    if( hosts.find( client ) != hosts.end( ))
+      printf( "%d: host already registered\n", client );
+    else
+      hosts[client] = new Host( host, cpus );
     Unlock( );
     return;
   }
   r = sscanf( buffer, "load %f", &load );
   if( r == 1 )
   {
+    Lock( );
     if( hosts.find( client ) == hosts.end( ))
-    {
       printf( "%d: client unknown\n", client );
-      return;
-    }
-    hosts[client]->SetLoad( load );
+    else
+      hosts[client]->SetLoad( load );
+    Unlock( );
     //printf( "%d: got load %f\n", client, load );
     return;
   }

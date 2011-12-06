@@ -29,11 +29,11 @@ struct ltslot
     return ( s1.key < s2.key );
   }
 };
+
 class Host;
+
 typedef std::map<Slot, Host *, ltslot> map_Slot;
-
-
-//typedef std::vector<Slot> vector_Slot;
+typedef std::map<Slot, Host *>::iterator iterator_Slot;
 
 #endif
 

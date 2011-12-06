@@ -20,8 +20,8 @@ class BalanccServer : public SocketHandler
 {
   private:
     std::map<int, Host *> hosts;
-    map_Slot assignment;
     typedef std::map<int, Host *>::iterator iterator_hosts;
+    map_Slot assignment;
 
     std::string GetHost( Slot slot, bool self = false );
 

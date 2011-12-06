@@ -12,7 +12,8 @@
 
 #include "Slot.h"
 
-#define SLOTS_PER_CPU 2
+#define SLOTS_PER_CPU    2
+#define SLOTS_ADDITIONAL 1
 
 class Host
 {
@@ -21,8 +22,6 @@ class Host
     int cpus;
     float load;
     int usage;
-
-//    vector_Slot slots;
 
   public:
     Host( const char *name, int cpus );

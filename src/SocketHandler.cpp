@@ -239,7 +239,7 @@ void *SocketHandler::run( void *ptr )
 {
   SocketHandler *sh = (SocketHandler *) ptr;
   sh->Run( );
-  // FIXME: pthread destroy
+  pthread_exit( 0 );
   return NULL;
 }
 
