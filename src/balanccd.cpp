@@ -8,8 +8,8 @@
 #include "BalanccServer.h"
 
 #include <unistd.h> // sleep
-#include <stdio.h> // printf
-#include <signal.h> // printf
+//#include <stdio.h>  // printf
+#include <signal.h>
 
 int PORT = 1977;
 
@@ -21,15 +21,24 @@ void sighandler( int signum )
     server->Stop();
 }
 
-int main()
+int main( int argc, char *argv[] )
 {
-  signal( SIGINT, sighandler );
+  signal( SIGINT, sighandler ); // FIXME: use sigaction
+  signal( SIGTERM, sighandler ); // FIXME: use sigaction
+
+  SocketHandler::OpenLog( argv[0] );
+  //FIXME: parse arguments
+
+  if( !SocketHandler::daemonize( "balancc" ))
+  {
+    SocketHandler::Log( "failed to create daemon" );
+    return -1;
+  }
 
   server = new BalanccServer( );
-
   if( !server->StartTCP( PORT ))
   {
-    printf( "unable to start server\n" );
+    SocketHandler::Log( "unable to start server" );
   }
 
   int c = 0;
@@ -40,8 +49,8 @@ int main()
     sleep( 1 );
   }
   server->Stop();
-
   delete server;
+  SocketHandler::Log( "terminated" );
   return 0;
 }
 

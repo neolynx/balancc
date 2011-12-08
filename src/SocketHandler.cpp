@@ -12,10 +12,14 @@
 #include <sys/socket.h> // fd_set
 #include <netdb.h>      // getaddrinfo
 #include <sys/time.h>   // timeval
-#include <unistd.h>     // sleep
+#include <unistd.h>     // sleep, exit
 #include <stdlib.h>     // calloc
 #include <string.h>     // memset
-#include <stdio.h>      // printf
+#include <stdio.h>      // printf, freopen
+#include <sys/stat.h>   // umask
+#include <pwd.h>        // getpwnam
+#include <syslog.h>     // openlog, vsyslog, closelog
+#include <stdarg.h>     // va_start, va_end
 
 SocketHandler::SocketHandler() : up(false), connected(false), autoreconnect(false), sd(0), message(NULL)
 {
@@ -25,6 +29,7 @@ SocketHandler::SocketHandler() : up(false), connected(false), autoreconnect(fals
 SocketHandler::~SocketHandler()
 {
   Stop( );
+  closelog( );
 }
 
 bool SocketHandler::ConnectTCP( const char *host, int port, bool autoreconnect )
@@ -134,7 +139,7 @@ bool SocketHandler::CreateSocket( )
   if( sd < 0 )
   {
     sd = 0;
-    printf( "socket creation failed\n" );
+    Log( "socket creation failed\n" );
     return false;
   }
   return true;
@@ -153,33 +158,33 @@ bool SocketHandler::StartServer( SocketType sockettype, int port, const char *so
 
   if( !CreateSocket( ))
   {
-    printf( "socket creation failed\n" );
+    Log( "socket creation failed\n" );
     return false;
   }
 
   int yes = 1;
   if( setsockopt( sd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(  int )) != 0 )
   {
-    printf( "setsockopt failed\n" );
+    Log( "setsockopt failed\n" );
     goto errorexit;
   }
 
   if( !Bind( ))
   {
-    printf( "bind failed\n" );
+    Log( "bind failed\n" );
     goto errorexit;
   }
 
   if( listen( sd, backlog ) != 0 )
   {
-    printf( "listen failed\n" );
+    Log( "listen failed\n" );
     goto errorexit;
   }
 
   up = true;
   if( pthread_create( &handler, NULL, run, (void *) this ) != 0 )
   {
-    printf( "thread creation failed\n" );
+    Log( "thread creation failed\n" );
     goto errorexit;
   }
   return true;
@@ -205,14 +210,14 @@ bool SocketHandler::StartClient( )
   }
   else if( !autoreconnect )
   {
-    printf( "Connection refused\n" );
+    Log( "Connection refused\n" );
     goto errorexit;
   }
 
   up = true;
   if( pthread_create( &handler, NULL, run, (void*) this ) != 0 )
   {
-    printf( "thread creation failed\n" );
+    Log( "thread creation failed\n" );
     goto errorexit;
   }
   return true;
@@ -269,7 +274,7 @@ void SocketHandler::Run( )
         }
         else
         {
-          printf( "Connection refused\n" );
+          Log( "Connection refused\n" );
           up = false;
         }
       }
@@ -287,7 +292,7 @@ void SocketHandler::Run( )
     struct timeval timeout = { 1, 0 }; // 1 sec
     if( select( fdmax + 1, &tmp_fds, NULL, NULL, &timeout ) == -1 )
     {
-      printf( "select error\n" );
+      Log( "select error\n" );
       up = false;
       continue;
     }
@@ -306,7 +311,7 @@ void SocketHandler::Run( )
               int newfd;
               if(( newfd = accept( sd, (struct sockaddr *) &clientaddr, &addrlen )) == -1 )
               {
-                printf( "accept error\n" );
+                Log( "accept error\n" );
                 continue;
               }
 
@@ -322,7 +327,7 @@ void SocketHandler::Run( )
               if( len <= 0 )
               {
                 if( len != 0 )
-                  printf( "Error receiving data...\n" );
+                  Log( "Error receiving data...\n" );
                 Disconnected( i, len != 0 );
                 close( i );
                 FD_CLR( i, &fds );
@@ -355,7 +360,7 @@ void SocketHandler::Run( )
                   readpos += already_read;
                   if( readpos == sizeof( buf ))
                     readpos = 0;
-                  //printf( "writepos: %d, readpos: %d\n", writepos, readpos );
+                  //Log( "writepos: %d, readpos: %d\n", writepos, readpos );
                 }
               }
             }
@@ -370,7 +375,7 @@ void SocketHandler::Run( )
           if( len <= 0 )
           {
             if( len != 0 )
-              printf( "Error receiving data...\n" );
+              Log( "Error receiving data...\n" );
             Disconnected( sd, len != 0 );
             connected = false;
             close( sd );
@@ -417,7 +422,7 @@ void SocketHandler::Run( )
               readpos += already_read;
               if( readpos == sizeof( buf ))
                 readpos = 0;
-              //printf( "writepos: %d, readpos: %d\n", writepos, readpos );
+              //Log( "writepos: %d, readpos: %d\n", writepos, readpos );
             }
           }
         }
@@ -434,13 +439,13 @@ bool SocketHandler::Send( const char *buffer, int len )
   int n = write( sd, buffer, len );
   if( n < 0 )
   {
-    printf( "error writing to socket\n" );
+    Log( "error writing to socket\n" );
     up = false;
     return false;
   }
   if( n != len )
   {
-    printf( "short write\n" );
+    Log( "short write\n" );
     return false;
   }
   return true;
@@ -454,13 +459,13 @@ bool SocketHandler::Send( int client, const char *buffer, int len )
   int n = write( client, buffer, len );
   if( n < 0 )
   {
-    printf( "error writing to socket\n" );
+    Log( "error writing to socket\n" );
     up = false;
     return false;
   }
   if( n != len )
   {
-    printf( "short write\n" );
+    Log( "short write\n" );
     return false;
   }
   return true;
@@ -492,7 +497,7 @@ int SocketHandler::Message::AccumulateData( const char *buffer, int length )
 {
   bool end = false;
   int i;
-  //  printf( "accumulating data: " );
+  //  Log( "accumulating data: " );
   //  Dump( buffer, length );
   for( i = 0; i < length; i++ )
     if( buffer[i] == '\0' ||  buffer[i] == '\n' ||  buffer[i] == '\r' )
@@ -508,5 +513,57 @@ int SocketHandler::Message::AccumulateData( const char *buffer, int length )
     Submit( );
   }
   return i;
+}
+
+bool SocketHandler::daemonize( const char *user )
+{
+  pid_t pid, sid;
+  if( getppid() == 1 ) // already daemonized
+  {
+    Log( "daemon cannot daemonize\n" );
+    return false;
+  }
+  if( user )
+  {
+    struct passwd *pwd = getpwnam( user );
+    if( setuid( pwd->pw_uid ) != 0 )
+    {
+      Log( "cannot setuid( %d ) for user %s\n", pwd->pw_uid, user );
+      return false;
+    }
+  }
+  pid = fork();
+  if( pid < 0 )
+  {
+    Log( "fork error\n" );
+    return false;
+  }
+  if( pid > 0 )
+    exit( 0 ); // exit the parent
+
+  // child
+  umask( 0 );
+  sid = setsid( );
+  if( sid < 0 )
+    return false;
+  if(( chdir( "/" )) < 0 )
+    return false;
+  freopen( "/dev/null", "r", stdin );
+  freopen( "/dev/null", "w", stdout );
+  freopen( "/dev/null", "w", stderr );
+  return true;
+}
+
+void SocketHandler::OpenLog( const char *prog )
+{
+  openlog( prog, LOG_PID | LOG_NDELAY, LOG_DAEMON );
+}
+
+void SocketHandler::Log( const char *fmt, ... )
+{
+  va_list ap;
+  va_start( ap, fmt );
+  vsyslog( LOG_INFO, fmt, ap );
+  va_end( ap );
 }
 

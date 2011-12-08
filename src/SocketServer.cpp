@@ -7,7 +7,7 @@
 
 #include "SocketServer.h"
 
-#include <stdio.h> // printf
+#include <stdio.h>  // sscanf
 #include <string.h> // strncmp
 
 #include "BalanccClient.h"
@@ -22,12 +22,12 @@ SocketServer::~SocketServer( )
 
 void SocketServer::Connected( int client )
 {
-  //printf( "%d: got new client\n", client );
+  //Log( "%d: got new client\n", client );
 }
 
 void SocketServer::Disconnected( int client, bool error )
 {
-  //  printf( "%d: client disconnected, error=%d\n", client, error );
+  //  Log( "%d: client disconnected, error=%d\n", client, error );
   char buf[64];
   snprintf( buf, sizeof( buf ), "free %d\n", client );
   balancclient.Send( buf, strlen( buf ));
@@ -71,7 +71,7 @@ void SocketServer::HandleMessage( const int client, const SocketHandler::Message
   }
   else
   {
-    printf( "unknown message: %s\n", msg.getLine( ).c_str( ));
+    Log( "unknown message: %s\n", msg.getLine( ).c_str( ));
   }
 }
 

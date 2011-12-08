@@ -7,7 +7,6 @@
 
 #include "SocketClient.h"
 
-#include <stdio.h> // printf
 #include <errno.h> // errno
 #include <time.h>  // clock_gettime
 
@@ -15,7 +14,7 @@ SocketClient::SocketClient( bool self ) : self(self)
 {
   if( sem_init( &host_available, 0, 0 ))
   {
-    printf("Could not initialize semaphore\n");
+    Log("Could not initialize semaphore\n");
   }
 }
 
@@ -34,7 +33,7 @@ void SocketClient::Connected( int client )
 
 void SocketClient::Disconnected( int client, bool error )
 {
-  //printf( "%d: client disconnected, error=%d\n", client, error );
+  //Log( "%d: client disconnected, error=%d\n", client, error );
 }
 
 const std::string &SocketClient::GetHost( )
@@ -42,7 +41,7 @@ const std::string &SocketClient::GetHost( )
   struct timespec ts;
   if( clock_gettime( CLOCK_REALTIME, &ts ) == -1 )
   {
-    printf( "Error getting time\n" );
+    Log( "Error getting time\n" );
     host = "!";
     return host;
   }
@@ -54,9 +53,9 @@ const std::string &SocketClient::GetHost( )
   if( s == -1 )
   {
     if( errno == ETIMEDOUT )
-      printf( "timeout\n" );
+      Log( "timeout\n" );
     else
-      printf( "semaphore error\n" );
+      Log( "semaphore error\n" );
     host = "!";
   }
   return host;
@@ -70,7 +69,7 @@ void SocketClient::HandleMessage( const int client, const SocketHandler::Message
     up = false;
   }
   else
-    printf( "strange response received\n" );
+    Log( "strange response received\n" );
   sem_post( &host_available );
 }
 

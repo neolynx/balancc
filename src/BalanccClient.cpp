@@ -7,7 +7,7 @@
 
 #include "BalanccClient.h"
 
-#include <stdio.h> // printf
+#include <stdio.h>  // fopen, fgets, fclose
 #include <string.h> // strlen
 #include <stdlib.h> // getloadavg
 #include <unistd.h> // gethostname
@@ -21,7 +21,7 @@ BalanccClient::BalanccClient( )
   socketserver = NULL;
   if( gethostname( hostname, sizeof( hostname )) < 0 )
   {
-    printf( "error getting hostname\n" );
+    Log( "error getting hostname\n" );
   }
 
   FILE *cpuinfo = fopen( "/proc/cpuinfo", "r" );
@@ -55,14 +55,14 @@ void BalanccClient::Connected( int client )
   snprintf( buf, sizeof( buf ), "host %s %d\n", hostname, ncpu );
   if( !Send( buf, strlen( buf )))
   {
-    printf( "error sending hostname\n" );
+    Log( "error sending hostname\n" );
   }
   SendLoad( );
 }
 
 void BalanccClient::Disconnected( int client, bool error )
 {
-  //  printf( "%d: client disconnected, error=%d\n", client, error );
+  //  Log( "%d: client disconnected, error=%d\n", client, error );
 }
 
 void BalanccClient::SendLoad( )
@@ -70,14 +70,14 @@ void BalanccClient::SendLoad( )
   double load[3];
   if( getloadavg(load, 3) == -1 )
   {
-    printf( "cannot get loadavg\n" );
+    Log( "cannot get loadavg\n" );
   }
 
   char buf[32];
   snprintf( buf, sizeof( buf ), "load %f\n", load[0] );
   if( !Send( buf, strlen( buf )))
   {
-    printf( "error sending load avg\n" );
+    Log( "error sending load avg\n" );
   }
 }
 

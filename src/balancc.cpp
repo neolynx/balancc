@@ -47,6 +47,8 @@ int main( int argc, char *argv[] )
   char *servername = NULL;
   bool self = false;
 
+  SocketHandler::OpenLog( argv[0] );
+
   signal( SIGINT, sighandler );
 
   int nextarg = 1;
@@ -93,7 +95,7 @@ int main( int argc, char *argv[] )
 
     if( !client->ConnectTCP( servername, serverport, true ))
     {
-      printf( "connect failed\n" );
+      SocketHandler::Log( "connect failed\n" );
       //FIXME cleanup
       return -1;
     }
@@ -101,13 +103,19 @@ int main( int argc, char *argv[] )
     server = new SocketServer( *client );
     if( !server->StartUnix( BALANCC_SOCK ))
     {
-      printf( "socket server failed to start\n" );
+      SocketHandler::Log( "socket server failed to start\n" );
       //FIXME cleanup
       return -1;
     }
 
     chmod( BALANCC_SOCK, 0666 );
     client->SetSocketServer( server );
+
+    if( !SocketHandler::daemonize( "balancc" ))
+    {
+      SocketHandler::Log( "failed to create daemon" );
+      return -1;
+    }
 
     while( client->isUp( ))
       sleep( 1 );
@@ -126,7 +134,7 @@ int main( int argc, char *argv[] )
       host = socketclient->GetHost( );
     }
     else
-      printf( "unable to connect to %s\n", BALANCC_SOCK );
+      fprintf( stderr, "unable to connect to %s\n", BALANCC_SOCK );
 
     if( host == "!" || host == "" )
       host = "localhost";
@@ -156,7 +164,7 @@ int main( int argc, char *argv[] )
         return -1;
       }
 
-      // parent process
+      // parent
       wait( &status );
       socketclient->Stop( );
       delete socketclient;
