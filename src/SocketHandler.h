@@ -37,7 +37,9 @@ class SocketHandler
       CLIENT
     } role;
 
-    bool StartServer( SocketType sockettype, int port, const char *sock );
+    bool CreateServer( SocketType sockettype, int port, const char *socket );
+    bool CreateClient( SocketType sockettype, const char *host, int port, const char *socket, bool autoreconnect );
+    bool StartServer( );
     bool StartClient( );
 
     bool CreateSocket( );
@@ -49,11 +51,12 @@ class SocketHandler
   public:
     virtual ~SocketHandler( );
 
-    bool StartTCP   ( int port )           { return StartServer  ( TCP, port, NULL ); }
-    bool StartUnix  ( const char *socket ) { return StartServer  ( UNIX, 0, socket ); }
-    bool ConnectTCP ( const char *host, int port, bool autoreconnect = false );
-    bool ConnectUnix( const char *socket, bool autoreconnect = false);
-    void Stop( );
+    bool CreateServerTCP ( int port )           { return CreateServer( TCP, port, NULL ); }
+    bool CreateServerUnix( const char *socket ) { return CreateServer( UNIX, 0, socket ); }
+    bool CreateClientTCP ( const char *host, int port, bool autoreconnect = false ) { return CreateClient( TCP, host, port, NULL, autoreconnect ); }
+    bool CreateClientUnix( const char *socket,         bool autoreconnect = false ) { return CreateClient( UNIX, NULL, 0, socket, autoreconnect ); }
+    bool Start( );
+    void Stop ( );
 
     virtual bool Send( const char *buffer, int len );
     virtual bool Send( int client, const char *buffer, int len );

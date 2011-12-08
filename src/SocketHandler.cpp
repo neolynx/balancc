@@ -32,23 +32,141 @@ SocketHandler::~SocketHandler()
   closelog( );
 }
 
-bool SocketHandler::ConnectTCP( const char *host, int port, bool autoreconnect )
+bool SocketHandler::CreateClient( SocketType sockettype, const char *host, int port, const char *socket, bool autoreconnect )
 {
   this->host = (char *) host;
   this->port = port;
-  this->autoreconnect = autoreconnect;
-  this->sockettype = TCP;
-  this->role = CLIENT;
-  return StartClient( );
-}
-
-bool SocketHandler::ConnectUnix( const char *socket, bool autoreconnect )
-{
   this->socket = (char *) socket;
   this->autoreconnect = autoreconnect;
-  this->sockettype = UNIX;
+  this->sockettype = sockettype;
   this->role = CLIENT;
-  return StartClient( );
+
+  if( sd )
+    return false;
+
+  if( !CreateSocket( ))
+    return false;
+
+  return true;
+}
+
+bool SocketHandler::CreateServer( SocketType sockettype, int port, const char *socket )
+{
+  if( sd )
+    return false;
+
+  this->role = SERVER;
+  this->sockettype = sockettype;
+  this->port = port;
+  this->socket = (char *) socket;
+
+  if( !CreateSocket( ))
+  {
+    Log( "socket creation failed" );
+    return false;
+  }
+
+  int yes = 1;
+  if( setsockopt( sd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(  int )) != 0 )
+  {
+    Log( "setsockopt failed" );
+    goto errorexit;
+  }
+
+  if( !Bind( ))
+  {
+    Log( "bind failed" );
+    goto errorexit;
+  }
+
+  return true;
+
+errorexit:
+  close( sd );
+  sd = 0;
+  return false;
+}
+
+bool SocketHandler::Start( )
+{
+  switch( role )
+  {
+    case SERVER:
+      return StartServer( );
+    case CLIENT:
+      return StartClient( );
+  }
+  return false;
+}
+
+void SocketHandler::Stop( )
+{
+  if( up )
+  {
+    up = false;
+    pthread_join( handler, NULL);
+  }
+  if( sd )
+  {
+    close( sd );
+    sd = 0;
+  }
+}
+
+bool SocketHandler::StartClient( )
+{
+  if( !sd )
+    return false;
+
+  if( Connect( ))
+  {
+    connected = true;
+    Connected( sd );
+  }
+  else if( !autoreconnect )
+  {
+    Log( "Connection refused" );
+    goto errorexit;
+  }
+
+  up = true;
+  if( pthread_create( &handler, NULL, run, (void*) this ) != 0 )
+  {
+    Log( "thread creation failed" );
+    goto errorexit;
+  }
+  return true;
+
+errorexit:
+  close( sd );
+  sd = 0;
+  return false;
+}
+
+bool SocketHandler::StartServer( )
+{
+  if( !sd )
+    return false;
+
+  int backlog = 15;
+  if( listen( sd, backlog ) != 0 )
+  {
+    Log( "listen failed" );
+    goto errorexit;
+  }
+
+  up = true;
+  if( pthread_create( &handler, NULL, run, (void *) this ) != 0 )
+  {
+    Log( "thread creation failed" );
+    goto errorexit;
+  }
+  return true;
+
+errorexit:
+  close( sd );
+  sd = 0;
+  return false;
 }
 
 bool SocketHandler::Bind( )
@@ -118,8 +236,6 @@ bool SocketHandler::Connect( )
         memset( &addr, 0, sizeof( struct sockaddr_un ));
         addr.sun_family = AF_UNIX;
         strncat( addr.sun_path, this->socket, UNIX_PATH_MAX - 1 );
-        // FIXME: verify it's a socket
-        //unlink( this->socket );
         return ( connect( sd, (struct sockaddr*) &addr, sizeof( addr )) == 0 );
       }
   }
@@ -139,105 +255,10 @@ bool SocketHandler::CreateSocket( )
   if( sd < 0 )
   {
     sd = 0;
-    Log( "socket creation failed\n" );
+    Log( "socket creation failed" );
     return false;
   }
   return true;
-}
-
-bool SocketHandler::StartServer( SocketType sockettype, int port, const char *socket )
-{
-  if( sd )
-    return false;
-
-  int backlog = 15;
-  this->role = SERVER;
-  this->sockettype = sockettype;
-  this->port = port;
-  this->socket = (char *) socket;
-
-  if( !CreateSocket( ))
-  {
-    Log( "socket creation failed\n" );
-    return false;
-  }
-
-  int yes = 1;
-  if( setsockopt( sd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(  int )) != 0 )
-  {
-    Log( "setsockopt failed\n" );
-    goto errorexit;
-  }
-
-  if( !Bind( ))
-  {
-    Log( "bind failed\n" );
-    goto errorexit;
-  }
-
-  if( listen( sd, backlog ) != 0 )
-  {
-    Log( "listen failed\n" );
-    goto errorexit;
-  }
-
-  up = true;
-  if( pthread_create( &handler, NULL, run, (void *) this ) != 0 )
-  {
-    Log( "thread creation failed\n" );
-    goto errorexit;
-  }
-  return true;
-
-errorexit:
-  close( sd );
-  sd = 0;
-  return false;
-}
-
-bool SocketHandler::StartClient( )
-{
-  if( sd )
-    return false;
-
-  if( !CreateSocket( ))
-    return false;
-
-  if( Connect( ))
-  {
-    connected = true;
-    Connected( sd );
-  }
-  else if( !autoreconnect )
-  {
-    Log( "Connection refused\n" );
-    goto errorexit;
-  }
-
-  up = true;
-  if( pthread_create( &handler, NULL, run, (void*) this ) != 0 )
-  {
-    Log( "thread creation failed\n" );
-    goto errorexit;
-  }
-  return true;
-
-errorexit:
-  close( sd );
-  sd = 0;
-  return false;
-}
-
-void SocketHandler::Stop( )
-{
-  if( up )
-    up = false;
-  pthread_join( handler, NULL);
-  if( sd )
-  {
-    close( sd );
-    sd = 0;
-  }
 }
 
 void *SocketHandler::run( void *ptr )
@@ -274,7 +295,7 @@ void SocketHandler::Run( )
         }
         else
         {
-          Log( "Connection refused\n" );
+          Log( "Connection refused" );
           up = false;
         }
       }
@@ -292,7 +313,7 @@ void SocketHandler::Run( )
     struct timeval timeout = { 1, 0 }; // 1 sec
     if( select( fdmax + 1, &tmp_fds, NULL, NULL, &timeout ) == -1 )
     {
-      Log( "select error\n" );
+      Log( "select error" );
       up = false;
       continue;
     }
@@ -311,7 +332,7 @@ void SocketHandler::Run( )
               int newfd;
               if(( newfd = accept( sd, (struct sockaddr *) &clientaddr, &addrlen )) == -1 )
               {
-                Log( "accept error\n" );
+                Log( "accept error" );
                 continue;
               }
 
@@ -327,7 +348,7 @@ void SocketHandler::Run( )
               if( len <= 0 )
               {
                 if( len != 0 )
-                  Log( "Error receiving data...\n" );
+                  Log( "Error receiving data..." );
                 Disconnected( i, len != 0 );
                 close( i );
                 FD_CLR( i, &fds );
@@ -375,7 +396,7 @@ void SocketHandler::Run( )
           if( len <= 0 )
           {
             if( len != 0 )
-              Log( "Error receiving data...\n" );
+              Log( "Error receiving data..." );
             Disconnected( sd, len != 0 );
             connected = false;
             close( sd );
@@ -439,13 +460,13 @@ bool SocketHandler::Send( const char *buffer, int len )
   int n = write( sd, buffer, len );
   if( n < 0 )
   {
-    Log( "error writing to socket\n" );
+    Log( "error writing to socket" );
     up = false;
     return false;
   }
   if( n != len )
   {
-    Log( "short write\n" );
+    Log( "short write" );
     return false;
   }
   return true;
@@ -459,13 +480,13 @@ bool SocketHandler::Send( int client, const char *buffer, int len )
   int n = write( client, buffer, len );
   if( n < 0 )
   {
-    Log( "error writing to socket\n" );
+    Log( "error writing to socket" );
     up = false;
     return false;
   }
   if( n != len )
   {
-    Log( "short write\n" );
+    Log( "short write" );
     return false;
   }
   return true;
@@ -520,7 +541,7 @@ bool SocketHandler::daemonize( const char *user )
   pid_t pid, sid;
   if( getppid() == 1 ) // already daemonized
   {
-    Log( "daemon cannot daemonize\n" );
+    Log( "daemon cannot daemonize" );
     return false;
   }
   if( user )
@@ -528,14 +549,14 @@ bool SocketHandler::daemonize( const char *user )
     struct passwd *pwd = getpwnam( user );
     if( setuid( pwd->pw_uid ) != 0 )
     {
-      Log( "cannot setuid( %d ) for user %s\n", pwd->pw_uid, user );
+      Log( "cannot setuid( %d ) for user %s", pwd->pw_uid, user );
       return false;
     }
   }
   pid = fork();
   if( pid < 0 )
   {
-    Log( "fork error\n" );
+    Log( "fork error" );
     return false;
   }
   if( pid > 0 )
