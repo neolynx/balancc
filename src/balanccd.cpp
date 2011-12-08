@@ -8,7 +8,6 @@
 #include "BalanccServer.h"
 
 #include <unistd.h> // sleep
-//#include <stdio.h>  // printf
 #include <signal.h>
 
 int PORT = 1977;
@@ -29,16 +28,26 @@ int main( int argc, char *argv[] )
   SocketHandler::OpenLog( argv[0] );
   //FIXME: parse arguments
 
-  if( !SocketHandler::daemonize( "balancc" ))
+  server = new BalanccServer( );
+  if( !server->CreateServerTCP( PORT ))
   {
-    SocketHandler::Log( "failed to create daemon" );
+    SocketHandler::Log( "unable to create server" );
+    delete server;
     return -1;
   }
 
-  server = new BalanccServer( );
-  if( !server->StartTCP( PORT ))
+  if( !SocketHandler::daemonize( "balancc" ))
+  {
+    SocketHandler::Log( "failed to create daemon" );
+    delete server;
+    return -1;
+  }
+
+  if( !server->Start( ))
   {
     SocketHandler::Log( "unable to start server" );
+    delete server;
+    return -1;
   }
 
   int c = 0;

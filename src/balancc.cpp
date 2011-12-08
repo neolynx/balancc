@@ -50,6 +50,7 @@ int main( int argc, char *argv[] )
   SocketHandler::OpenLog( argv[0] );
 
   signal( SIGINT, sighandler );
+  signal( SIGTERM, sighandler );
 
   int nextarg = 1;
   for( ; nextarg < argc; nextarg++ )
@@ -92,43 +93,63 @@ int main( int argc, char *argv[] )
   if( servername )
   {
     client = new BalanccClient( );
-
-    if( !client->ConnectTCP( servername, serverport, true ))
+    if( !client->CreateClientTCP( servername, serverport, true ))
     {
-      SocketHandler::Log( "connect failed\n" );
-      //FIXME cleanup
+      SocketHandler::Log( "tcp client creation failed" );
+      delete client;
       return -1;
     }
 
     server = new SocketServer( *client );
-    if( !server->StartUnix( BALANCC_SOCK ))
+    if( !server->CreateServerUnix( BALANCC_SOCK ))
     {
-      SocketHandler::Log( "socket server failed to start\n" );
-      //FIXME cleanup
+      SocketHandler::Log( "socket server creation failed" );
+      delete client;
+      delete server;
+      return -1;
+    }
+
+    if( !SocketHandler::daemonize( "balancc" ))
+    {
+      SocketHandler::Log( "failed to create daemon" );
+      delete client;
+      delete server;
+      return -1;
+    }
+
+    if( !client->Start( ))
+    {
+      SocketHandler::Log( "connect failed" );
+      delete client;
+      return -1;
+    }
+
+    if( !server->Start( ))
+    {
+      SocketHandler::Log( "socket server failed to start" );
+      delete client;
+      delete server;
       return -1;
     }
 
     chmod( BALANCC_SOCK, 0666 );
     client->SetSocketServer( server );
 
-    if( !SocketHandler::daemonize( "balancc" ))
-    {
-      SocketHandler::Log( "failed to create daemon" );
-      return -1;
-    }
-
     while( client->isUp( ))
       sleep( 1 );
     client->Stop();
 
     delete client;
+    delete server;
+    SocketHandler::Log( "terminated" );
   }
   else // Get host from server
   {
     std::string host;
 
     socketclient = new SocketClient( self );
-    socketclient->ConnectUnix( BALANCC_SOCK );
+    socketclient->CreateClientUnix( BALANCC_SOCK );
+    socketclient->Start( );
     if( socketclient->isConnected( ))
     {
       host = socketclient->GetHost( );
