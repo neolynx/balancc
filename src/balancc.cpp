@@ -108,13 +108,10 @@ int main( int argc, char *argv[] )
       delete server;
       return -1;
     }
-<<<<<<< HEAD
     chmod( BALANCC_SOCK, 0666 );
     client->SetSocketServer( server );
-=======
->>>>>>> a97a8667cddbd6d9feed3f7264e919f09a00873e
 
-    if( !SocketHandler::daemonize( "balancc" ))
+    if( !SocketHandler::Daemonize( "balancc", "/var/run/balancc.pid" ))
     {
       SocketHandler::Log( "failed to create daemon" );
       delete client;
@@ -126,17 +123,6 @@ int main( int argc, char *argv[] )
     {
       SocketHandler::Log( "connect failed" );
       delete client;
-<<<<<<< HEAD
-      return -1;
-    }
-
-    if( !server->Start( ))
-    {
-      SocketHandler::Log( "socket server failed to start" );
-      delete client;
-      delete server;
-=======
->>>>>>> a97a8667cddbd6d9feed3f7264e919f09a00873e
       return -1;
     }
 
@@ -147,9 +133,6 @@ int main( int argc, char *argv[] )
       delete server;
       return -1;
     }
-
-    chmod( BALANCC_SOCK, 0666 );
-    client->SetSocketServer( server );
 
     while( client->isUp( ))
       sleep( 1 );

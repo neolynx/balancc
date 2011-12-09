@@ -64,9 +64,10 @@ class SocketHandler
     bool isUp( ) { return up; }
     bool isConnected( ) { return connected; }
 
-    static bool daemonize( const char *user = NULL );
-    static void OpenLog( const char *prog );
-    static void Log( const char *fmt, ... ) __attribute__ (( format( printf, 1, 2 )));
+    static bool Daemonize( const char *user = NULL, const char *pidfile = NULL );
+    static void OpenLog  ( const char *prog );
+    static void Log      ( const char *fmt, ... ) __attribute__ (( format( printf, 1, 2 )));
+    static void LogError ( const char *fmt, ... ) __attribute__ (( format( printf, 1, 2 )));
 
   protected:
     bool up;
@@ -101,6 +102,7 @@ class SocketHandler
 
   private:
     Message *message;
+    std::string pidfile;
 };
 
 #endif

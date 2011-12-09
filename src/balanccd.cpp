@@ -36,7 +36,7 @@ int main( int argc, char *argv[] )
     return -1;
   }
 
-  if( !SocketHandler::daemonize( "balancc" ))
+  if( !SocketHandler::Daemonize( "balancc", "/var/run/balanccd.pid" ))
   {
     SocketHandler::Log( "failed to create daemon" );
     delete server;
