@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.67])
+AC_PREREQ([2.65])
 AC_INIT([balancc], [0.1], [neolynx@gmail.com])
 AC_CONFIG_SRCDIR([src/config.h.in])
 AC_CONFIG_HEADERS([src/config.h])
@@ -32,6 +32,5 @@ AC_TYPE_UINT32_T
 AC_FUNC_FORK
 AC_CHECK_FUNCS([clock_gettime gethostname memset putenv select socket strerror])
 
-AC_CONFIG_FILES([Makefile
-                 src/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT
