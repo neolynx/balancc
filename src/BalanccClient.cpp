@@ -21,7 +21,7 @@ BalanccClient::BalanccClient( )
   socketserver = NULL;
   if( gethostname( hostname, sizeof( hostname )) < 0 )
   {
-    Log( "error getting hostname\n" );
+    LogError( "error getting hostname" );
   }
 
   FILE *cpuinfo = fopen( "/proc/cpuinfo", "r" );
@@ -55,14 +55,14 @@ void BalanccClient::Connected( int client )
   snprintf( buf, sizeof( buf ), "host %s %d\n", hostname, ncpu );
   if( !Send( buf, strlen( buf )))
   {
-    Log( "error sending hostname\n" );
+    LogError( "error sending hostname" );
   }
   SendLoad( );
 }
 
 void BalanccClient::Disconnected( int client, bool error )
 {
-  //  Log( "%d: client disconnected, error=%d\n", client, error );
+  //  Log( "%d: client disconnected, error=%d", client, error );
 }
 
 void BalanccClient::SendLoad( )
@@ -70,14 +70,14 @@ void BalanccClient::SendLoad( )
   double load[3];
   if( getloadavg(load, 3) == -1 )
   {
-    Log( "cannot get loadavg\n" );
+    LogError( "cannot get loadavg" );
   }
 
   char buf[32];
   snprintf( buf, sizeof( buf ), "load %f\n", load[0] );
   if( !Send( buf, strlen( buf )))
   {
-    Log( "error sending load avg\n" );
+    LogError( "error sending load avg" );
   }
 }
 

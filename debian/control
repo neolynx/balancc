@@ -4,12 +4,16 @@ Priority: extra
 Maintainer: André Roth <neolynx@gmail.com>
 Build-Depends: debhelper (>= 7.0.50~), autotools-dev
 Standards-Version: 3.9.1
-#Homepage: <insert the upstream URL, if relevant>
-#Vcs-Git: git://git.debian.org/collab-maint/balancc.git
-#Vcs-Browser: http://git.debian.org/?p=collab-maint/balancc.git;a=summary
+Homepage: https://github.com/neolynx/balancc/wiki
+Vcs-Git: http://github.com/neolynx/balancc.git
+Vcs-Browser: https://github.com/neolynx/balancc
 
 Package: balancc
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
+Suggests: distcc
 Description: load balancer for distcc and more
- <insert long description, indented with spaces>
+ Client and Server for load balancing. The server
+ keeps track of the average load on the clients,
+ and provides the most idle client upon request.
+ Can be used in conjunction with distcc.

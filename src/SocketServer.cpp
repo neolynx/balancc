@@ -71,7 +71,7 @@ void SocketServer::HandleMessage( const int client, const SocketHandler::Message
   }
   else
   {
-    Log( "unknown message: %s\n", msg.getLine( ).c_str( ));
+    LogError( "unknown message: %s", msg.getLine( ).c_str( ));
   }
 }
 

@@ -92,10 +92,11 @@ int main( int argc, char *argv[] )
 
   if( servername )
   {
+    SocketHandler::Log( "started" );
     client = new BalanccClient( );
     if( !client->CreateClientTCP( servername, serverport, true ))
     {
-      SocketHandler::Log( "tcp client creation failed" );
+      SocketHandler::LogError( "tcp client creation failed" );
       delete client;
       return -1;
     }
@@ -103,7 +104,7 @@ int main( int argc, char *argv[] )
     server = new SocketServer( *client );
     if( !server->CreateServerUnix( BALANCC_SOCK ))
     {
-      SocketHandler::Log( "socket server creation failed" );
+      SocketHandler::LogError( "socket server creation failed" );
       delete client;
       delete server;
       return -1;
@@ -113,7 +114,7 @@ int main( int argc, char *argv[] )
 
     if( !SocketHandler::Daemonize( "balancc", "/var/run/balancc.pid" ))
     {
-      SocketHandler::Log( "failed to create daemon" );
+      SocketHandler::LogError( "failed to create daemon" );
       delete client;
       delete server;
       return -1;
@@ -121,14 +122,14 @@ int main( int argc, char *argv[] )
 
     if( !client->Start( ))
     {
-      SocketHandler::Log( "connect failed" );
+      SocketHandler::LogError( "connect failed" );
       delete client;
       return -1;
     }
 
     if( !server->Start( ))
     {
-      SocketHandler::Log( "socket server failed to start" );
+      SocketHandler::LogError( "socket server failed to start" );
       delete client;
       delete server;
       return -1;
@@ -159,10 +160,16 @@ int main( int argc, char *argv[] )
     if( host == "!" || host == "" )
       host = "localhost";
     std::ostringstream tmp;
-    tmp << "DISTCC_HOSTS=" << host;
+    tmp << "DISTCC_HOSTS=localhost " << host;
     if( putenv((char *) tmp.str().c_str()) != 0 )
     {
-      fprintf( stderr, "Error putting DISTCC_HOSTS in the environment\n" );
+      fprintf( stderr, "Cannot set DISTCC_HOSTS environment variable\n" );
+    }
+    tmp.str( "BALANCC_HOST=" );
+    tmp << host;
+    if( putenv((char *) tmp.str().c_str()) != 0 )
+    {
+      fprintf( stderr, "Cannot set BALANCC_HOST environment variable\n" );
     }
 
     int status = 0;

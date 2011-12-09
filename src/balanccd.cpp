@@ -28,24 +28,26 @@ int main( int argc, char *argv[] )
   SocketHandler::OpenLog( argv[0] );
   //FIXME: parse arguments
 
+  SocketHandler::Log( "started" );
+
   server = new BalanccServer( );
   if( !server->CreateServerTCP( PORT ))
   {
-    SocketHandler::Log( "unable to create server" );
+    SocketHandler::LogError( "unable to create server" );
     delete server;
     return -1;
   }
 
   if( !SocketHandler::Daemonize( "balancc", "/var/run/balanccd.pid" ))
   {
-    SocketHandler::Log( "failed to create daemon" );
+    SocketHandler::LogError( "failed to create daemon" );
     delete server;
     return -1;
   }
 
   if( !server->Start( ))
   {
-    SocketHandler::Log( "unable to start server" );
+    SocketHandler::LogError( "unable to start server" );
     delete server;
     return -1;
   }

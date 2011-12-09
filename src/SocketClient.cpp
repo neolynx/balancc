@@ -14,7 +14,7 @@ SocketClient::SocketClient( bool self ) : self(self)
 {
   if( sem_init( &host_available, 0, 0 ))
   {
-    Log("Could not initialize semaphore\n");
+    LogError("Could not initialize semaphore");
   }
 }
 
@@ -33,7 +33,7 @@ void SocketClient::Connected( int client )
 
 void SocketClient::Disconnected( int client, bool error )
 {
-  //Log( "%d: client disconnected, error=%d\n", client, error );
+  //Log( "%d: client disconnected, error=%d", client, error );
 }
 
 const std::string &SocketClient::GetHost( )
@@ -41,7 +41,7 @@ const std::string &SocketClient::GetHost( )
   struct timespec ts;
   if( clock_gettime( CLOCK_REALTIME, &ts ) == -1 )
   {
-    Log( "Error getting time\n" );
+    LogError( "Error getting time" );
     host = "!";
     return host;
   }
@@ -53,9 +53,9 @@ const std::string &SocketClient::GetHost( )
   if( s == -1 )
   {
     if( errno == ETIMEDOUT )
-      Log( "timeout\n" );
+      LogWarn( "timeout" );
     else
-      Log( "semaphore error\n" );
+      LogError( "semaphore error" );
     host = "!";
   }
   return host;
@@ -69,7 +69,7 @@ void SocketClient::HandleMessage( const int client, const SocketHandler::Message
     up = false;
   }
   else
-    Log( "strange response received\n" );
+    LogError( "strange response received" );
   sem_post( &host_available );
 }
 

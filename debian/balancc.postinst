@@ -1,0 +1,14 @@
+#!/bin/sh -e
+# postinst script for balancc
+
+if [ -x "/etc/init.d/balancc" ]; then
+  update-rc.d balancc defaults >/dev/null
+  adduser --quiet --system --ingroup nogroup --home / --no-create-home balancc
+  if [ -x "`which invoke-rc.d 2>/dev/null`" ]; then
+    invoke-rc.d balancc start || exit $?
+  else
+    /etc/init.d/balancc start || exit $?
+  fi
+fi
+
+#DEBHELPER#

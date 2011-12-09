@@ -1,0 +1,5 @@
+# Set SERVER=yes to act as central balancc server
+SERVER=
+
+# Set USE_SERVER=servername to act as client
+USE_SERVER=

@@ -18,25 +18,25 @@ BalanccServer::~BalanccServer( )
 
 void BalanccServer::Connected( int client )
 {
-  //Log( "%d: got new client\n", client );
+  //Log( "%d: got new client", client );
 }
 
 void BalanccServer::Disconnected( int client, bool error )
 {
-  //Log( "%d: client disconnected, error=%d\n", client, error );
+  //Log( "%d: client disconnected, error=%d", client, error );
   Lock( );
   iterator_hosts h = hosts.find( client );
   if( h == hosts.end( ))
-    Log( "unknown client %d disconnected\n", client );
+    LogWarn( "unknown client %d disconnected", client );
   else
   {
     for( iterator_Slot i = assignment.begin( ); i != assignment.end( ); i++ )
       if( i->first.client == client )
       {
-        Log( "%d:%d slot destroyed: disconnect\n", i->first.client, i->first.id );
+        Log( "%d:%d slot destroyed: disconnect", i->first.client, i->first.id );
         assignment.erase( i );
       }
-    Log( "unregistered %s\n", h->second->GetName( ).c_str( ));
+    Log( "unregistered %s", h->second->GetName( ).c_str( ));
     delete h->second;
     hosts.erase( client );
   }
@@ -65,21 +65,21 @@ std::string BalanccServer::GetHost( Slot slot, bool self )
   if( h )
   {
     if( assignment.find( slot ) != assignment.end( ))
-      Log( "%d:%d slot already assigned\n", slot.client, slot.id );
+      LogError( "%d:%d slot already assigned", slot.client, slot.id );
     else
     {
       if( !h->Assign( ))
-        Log( "%d:%d host assignmenet failed\n", slot.client, slot.id );
+        LogError( "%d:%d host assignmenet failed", slot.client, slot.id );
       else
       {
         assignment[slot] = h;
         host = h->GetName( );
-        Log( "%d:%d assigned to %s\n", slot.client, slot.id, host.c_str( ));
+        Log( "%d:%d assigned to %s", slot.client, slot.id, host.c_str( ));
       }
     }
   }
   else
-    Log( "%d:%d all hosts busy\n", slot.client, slot.id );
+    LogNotice( "%d:%d all hosts busy", slot.client, slot.id );
   Unlock( );
   return host;
 }
@@ -96,7 +96,7 @@ void BalanccServer::Polling( )
 
 void BalanccServer::HandleMessage( const int client, const SocketHandler::Message &msg )
 {
-  //Log( "BalanccServer got message from %d: %s\n", client, msg.getLine( ).c_str( ));
+  //Log( "BalanccServer got message from %d: %s", client, msg.getLine( ).c_str( ));
   const char *buffer = msg.getLine( ).c_str( );
   int length = msg.getLine( ).length( );
   //Dump( buffer, length );
@@ -105,7 +105,7 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
   r = sscanf( buffer, "get %d", &id );
   if( r == 1 )
   {
-    //Log( "host request with id %d:%d\n", client, id );
+    //Log( "host request with id %d:%d", client, id );
     Slot slot( client, id );
     std::string host = GetHost( slot );
     char buf[64];
@@ -117,7 +117,7 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
   r = sscanf( buffer, "+get %d", &id ); // host request including self host
   if( r == 1 )
   {
-    //Log( "host request with id %d:%d\n", client, id );
+    //Log( "host request with id %d:%d", client, id );
     Slot slot( client, id );
     std::string host = GetHost( slot, true );
     char buf[64];
@@ -132,10 +132,10 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     Lock( );
     iterator_Slot i = assignment.find( slot );
     if( i == assignment.end( ))
-      Log( "%d:%d cannot free: host is not assigned\n", slot.client, slot.id );
+      LogError( "%d:%d cannot free: host is not assigned", slot.client, slot.id );
     else
     {
-      Log( "%d:%d freed %s\n", slot.client, slot.id, (*i).second->GetName( ).c_str( ));
+      Log( "%d:%d freed %s", slot.client, slot.id, (*i).second->GetName( ).c_str( ));
       (*i).second->Release( );
       assignment.erase( slot );
     }
@@ -149,13 +149,13 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
   r = sscanf( buffer, "host %s %d", host, &cpus ); // FIXME: overflow
   if( r == 2 )
   {
-    //Log( "%d: got host %s, %d CPUs\n", client, host, cpus );
+    //Log( "%d: got host %s, %d CPUs", client, host, cpus );
     Lock( );
     if( hosts.find( client ) != hosts.end( ))
-      Log( "%d: host already registered\n", client );
+      LogError( "%d: host already registered", client );
     else
     {
-      Log( "registered %s\n", host );
+      Log( "registered %s", host );
       hosts[client] = new Host( host, cpus );
     }
     Unlock( );
@@ -166,14 +166,14 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
   {
     Lock( );
     if( hosts.find( client ) == hosts.end( ))
-      Log( "%d: client unknown\n", client );
+      LogError( "%d: client unknown", client );
     else
       hosts[client]->SetLoad( load );
     Unlock( );
-    //Log( "%d: got load %f\n", client, load );
+    //Log( "%d: got load %f", client, load );
     return;
   }
 
-  Log( "unknown message: %s\n", buffer );
+  LogError( "unknown message: %s", buffer );
 }
 

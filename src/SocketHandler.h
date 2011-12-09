@@ -67,6 +67,8 @@ class SocketHandler
     static bool Daemonize( const char *user = NULL, const char *pidfile = NULL );
     static void OpenLog  ( const char *prog );
     static void Log      ( const char *fmt, ... ) __attribute__ (( format( printf, 1, 2 )));
+    static void LogNotice( const char *fmt, ... ) __attribute__ (( format( printf, 1, 2 )));
+    static void LogWarn  ( const char *fmt, ... ) __attribute__ (( format( printf, 1, 2 )));
     static void LogError ( const char *fmt, ... ) __attribute__ (( format( printf, 1, 2 )));
 
   protected:

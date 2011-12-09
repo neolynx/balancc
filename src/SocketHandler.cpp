@@ -611,6 +611,22 @@ void SocketHandler::Log( const char *fmt, ... )
   va_end( ap );
 }
 
+void SocketHandler::LogNotice( const char *fmt, ... )
+{
+  va_list ap;
+  va_start( ap, fmt );
+  vsyslog( LOG_NOTICE, fmt, ap );
+  va_end( ap );
+}
+
+void SocketHandler::LogWarn( const char *fmt, ... )
+{
+  va_list ap;
+  va_start( ap, fmt );
+  vsyslog( LOG_WARNING, fmt, ap );
+  va_end( ap );
+}
+
 void SocketHandler::LogError( const char *fmt, ... )
 {
   va_list ap;

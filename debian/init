@@ -1,0 +1,226 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          balanccd
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Should-Start:      $network
+# Should-Stop:       $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: <Enter a short description of the sortware>
+# Description:       <Enter a long description of the software>
+#                    <...>
+#                    <...>
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+NAME=balancc
+CLIENT_NAME=$NAME
+CLIENT_DAEMON=/usr/bin/$CLIENT_NAME
+CLIENT_DESC="$NAME client"
+CLIENT_PIDFILE=/var/run/$CLIENT_NAME.pid
+
+SERVER_NAME=balanccd
+SERVER_DAEMON=/usr/sbin/$SERVER_NAME
+SERVER_DESC="$NAME server"
+SERVER_PIDFILE=/var/run/$SERVER_NAME.pid
+
+DAEMONUSER=balancc
+
+DIETIME=2
+
+test -x $CLIENT_DAEMON || exit 0
+
+test -x $SERVER_DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+# Include defaults if available
+if [ -f /etc/default/$NAME ] ; then
+  . /etc/default/$NAME
+fi
+
+if [ -z "$SERVER" ]; then
+  log_warning_msg "please edit /etc/default/$NAME to enable $NAME"
+  exit 0
+fi
+
+CLIENT_OPTS="-s $USE_SERVER"
+set -e
+
+running()
+{
+  # Check if a given process pid's cmdline matches a given name
+  pidfile=$1
+  name=$2
+  [ -z "$pidfile" ] && return 1
+  # No pidfile, probably no daemon present
+  [ ! -f "$pidfile" ] && return 1
+  pid=`cat $pidfile`
+  [ ! -d /proc/$pid ] &&  return 1
+  cmd=`cat /proc/$pid/cmdline | tr "\000" "\n"|head -n 1 |cut -d : -f 1`
+  # Is this the expected server
+  [ "$cmd" != "$name" ] &&  return 1
+  return 0
+}
+
+server_running()
+{
+  running $SERVER_PIDFILE $SERVER_DAEMON
+  return $?
+}
+
+client_running()
+{
+  running $CLIENT_PIDFILE $CLIENT_DAEMON
+  return $?
+}
+
+start_server()
+{
+  errcode=1
+  if [ "$SERVER" = "yes" ]; then
+    start-stop-daemon --start --exec $SERVER_DAEMON -- $SERVER_OPTS
+    errcode=$?
+  fi
+  return $errcode
+}
+
+start_client()
+{
+  errcode=1
+  if [ ! -z "$USE_SERVER" ]; then
+    start-stop-daemon --start --exec $CLIENT_DAEMON -- $CLIENT_OPTS
+    errcode=$?
+  fi
+  return $errcode
+}
+
+stop_server()
+{
+  start-stop-daemon --stop --pidfile $SERVER_PIDFILE --exec $SERVER_DAEMON
+  errcode=$?
+  return $errcode
+}
+
+stop_client()
+{
+  start-stop-daemon --stop --pidfile $CLIENT_PIDFILE --exec $CLIENT_DAEMON
+  errcode=$?
+  return $errcode
+}
+
+case "$1" in
+  start)
+    if [ "$SERVER" = "yes" ]; then
+      log_daemon_msg "Starting $SERVER_DESC" "$SERVER_NAME"
+      # Check if it's running first
+      if server_running;  then
+        log_progress_msg "apparently already running"
+        log_end_msg 0
+        exit 0
+      fi
+      if start_server && server_running;  then
+        # It's ok, the server started and is running
+        log_end_msg 0
+      else
+        # Either we could not start it or it is not running
+        # after we did
+        # NOTE: Some servers might die some time after they start,
+        # this code does not try to detect this and might give
+        # a false positive (use 'status' for that)
+        log_end_msg 1
+      fi
+    fi
+
+    if [ "$USE_SERVER" ]; then
+      log_daemon_msg "Starting $CLIENT_DESC" "$CLIENT_NAME"
+      # Check if it's running first
+      if client_running;  then
+        log_progress_msg "apparently already running"
+        log_end_msg 0
+        exit 0
+      fi
+      if start_client && client_running;  then
+        # It's ok, the server started and is running
+        log_end_msg 0
+      else
+        # Either we could not start it or it is not running
+        # after we did
+        # NOTE: Some servers might die some time after they start,
+        # this code does not try to detect this and might give
+        # a false positive (use 'status' for that)
+        log_end_msg 1
+      fi
+    fi
+    ;;
+
+  stop)
+    if [ "$USE_SERVER" ]; then
+      log_daemon_msg "Stopping $CLIENT_DESC" "$CLIENT_NAME"
+      if client_running; then
+        # Only stop the server if we see it running
+        stop_client
+        log_end_msg $?
+        [ -n "$DIETIME" ] && sleep $DIETIME
+      else
+        # If it's not running don't do anything
+        log_progress_msg "apparently not running"
+        log_end_msg 0
+      fi
+    fi
+    if [ "$SERVER" = "yes" ]; then
+      log_daemon_msg "Stopping $SERVER_DESC" "$SERVER_NAME"
+      if server_running; then
+        # Only stop the server if we see it running
+        stop_server
+        log_end_msg $?
+      else
+        # If it's not running don't do anything
+        log_progress_msg "apparently not running"
+        log_end_msg 0
+      fi
+    fi
+    ;;
+
+  restart|force-reload)
+    if [ "$USE_SERVER" ]; then
+      log_daemon_msg "Restarting $CLIENT_DESC" "$CLIENT_NAME"
+      client_running && stop_client
+      [ -n "$DIETIME" ] && sleep $DIETIME
+      start_client
+      client_running
+      log_end_msg $?
+    fi
+    if [ "$SERVER" = "yes" ]; then
+      log_daemon_msg "Restarting $SERVER_DESC" "$SERVER_NAME"
+      server_running && stop_server
+      [ -n "$DIETIME" ] && sleep $DIETIME
+      start_server
+      server_running
+      log_end_msg $?
+    fi
+    ;;
+
+  status)
+    log_daemon_msg "Checking status of $DESC" "$NAME2"
+    if running ;  then
+      log_progress_msg "running"
+      log_end_msg 0
+    else
+      log_progress_msg "apparently not running"
+      log_end_msg 1
+      exit 1
+    fi
+    ;;
+
+  *)
+    N=/etc/init.d/$NAME
+    echo "Usage: $N {start|stop|restart|status}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
+
