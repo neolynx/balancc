@@ -28,7 +28,7 @@ class Host
     ~Host( );
     void SetLoad( float load );
     float GetLoad( ) { return load; }
-    std::string &GetName( ) { return name; }
+    const std::string &GetName( ) { return name; }
 
     bool Assign( );
     bool Release( );
