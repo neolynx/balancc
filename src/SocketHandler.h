@@ -10,6 +10,7 @@
 
 #include <pthread.h>
 #include <string>
+#include <map>
 
 class SocketHandler
 {
@@ -103,7 +104,7 @@ class SocketHandler
     virtual void HandleMessage( const int client, const Message &msg ) = 0;
 
   private:
-    Message *message;
+    std::map<int, Message *> messages;
     std::string pidfile;
 };
 

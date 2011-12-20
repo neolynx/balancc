@@ -1,3 +1,9 @@
+balancc (0.2) unstable; urgency=low
+
+  * Fixed SocketHandler concurrecny
+
+ --  André Roth <neolynx@gmail.com> Tue, 20 Dec 2011 23:44:36 +0100
+
 balancc (0.1) unstable; urgency=low
 
   * Initial Release.

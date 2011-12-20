@@ -22,7 +22,7 @@
 #include <stdarg.h>     // va_start, va_end
 #include <fcntl.h>      // creat
 
-SocketHandler::SocketHandler() : up(false), connected(false), autoreconnect(false), sd(0), host(NULL), port(0), socket(0), message(NULL)
+SocketHandler::SocketHandler() : up(false), connected(false), autoreconnect(false), sd(0), host(NULL), port(0), socket(0)
 {
   pthread_mutex_init( &mutex, 0 );
 }
@@ -367,21 +367,21 @@ void SocketHandler::Run( )
                 int already_read;
                 while( readpos != writepos && up ) // handle all data
                 {
-                  if( !message )
-                    message = CreateMessage( );
+                  if( !messages[i] )
+                    messages[i] = CreateMessage( );
 
-                  already_read = message->AccumulateData( buf + readpos, len );
+                  already_read = messages[i]->AccumulateData( buf + readpos, len );
                   if( already_read > len )
                   {
                     // FIXME: log
                     already_read = len;
                   }
 
-                  if( message->isSubmitted( ))
+                  if( messages[i]->isSubmitted( ))
                   {
-                    HandleMessage( i, *message );
-                    delete message;
-                    message = NULL;
+                    HandleMessage( i, *messages[i] );
+                    delete messages[i];
+                    messages[i] = NULL;
                   }
                   len     -= already_read;
                   readpos += already_read;
@@ -429,21 +429,21 @@ void SocketHandler::Run( )
             int already_read;
             while( readpos != writepos && up ) // handle all data
             {
-              if( !message )
-                message = CreateMessage( );
+              if( !messages[sd] )
+                messages[sd] = CreateMessage( );
 
-              already_read = message->AccumulateData( buf + readpos, len );
+              already_read = messages[sd]->AccumulateData( buf + readpos, len );
               if( already_read > len )
               {
                 // FIXME: log
                 already_read = len;
               }
 
-              if( message->isSubmitted( ))
+              if( messages[sd]->isSubmitted( ))
               {
-                HandleMessage( sd, *message );
-                delete message;
-                message = NULL;
+                HandleMessage( sd, *messages[sd] );
+                delete messages[sd];
+                messages[sd] = NULL;
               }
               len     -= already_read;
               readpos += already_read;
