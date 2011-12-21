@@ -301,7 +301,7 @@ void SocketHandler::Run( )
         }
         else
         {
-          LogError( "Connection refused" );
+          LogError( "Reconnect refused" );
           up = false;
         }
       }
@@ -406,6 +406,7 @@ void SocketHandler::Run( )
             Disconnected( sd, len != 0 );
             connected = false;
             close( sd );
+            sd = 0;
             if( autoreconnect )
             {
               if( !CreateSocket( ))
@@ -417,7 +418,6 @@ void SocketHandler::Run( )
             }
             else
             {
-              sd = 0;
               up = false;
             }
           }
@@ -467,7 +467,9 @@ bool SocketHandler::Send( const char *buffer, int len )
   if( n < 0 )
   {
     LogError( "error writing to socket" );
-    up = false;
+    close( sd );
+    sd = 0;
+    connected = false;
     return false;
   }
   if( n != len )
@@ -487,7 +489,9 @@ bool SocketHandler::Send( int client, const char *buffer, int len )
   if( n < 0 )
   {
     LogError( "error writing to socket" );
-    up = false;
+    Disconnected( client, true );
+    close( client );
+    // FIXME: remove client from fds !
     return false;
   }
   if( n != len )
