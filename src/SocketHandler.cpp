@@ -467,6 +467,7 @@ bool SocketHandler::Send( const char *buffer, int len )
   if( n < 0 )
   {
     LogError( "error writing to socket" );
+    Disconnected( sd, true );
     close( sd );
     sd = 0;
     connected = false;

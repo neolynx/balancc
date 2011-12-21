@@ -27,7 +27,7 @@ void BalanccServer::Disconnected( int client, bool error )
   Lock( );
   iterator_hosts h = hosts.find( client );
   if( h == hosts.end( ))
-    LogWarn( "unknown client %d disconnected", client );
+    LogWarn( "%d: unknown client disconnected", client );
   else
   {
     for( iterator_Slot i = assignment.begin( ); i != assignment.end( ); i++ )
@@ -36,7 +36,7 @@ void BalanccServer::Disconnected( int client, bool error )
         Log( "%d:%d slot destroyed: disconnect", i->first.client, i->first.id );
         assignment.erase( i );
       }
-    Log( "unregistered %s", h->second->GetName( ).c_str( ));
+    Log( "%d: unregistered %s", client, h->second->GetName( ).c_str( ));
     delete h->second;
     hosts.erase( client );
   }
@@ -155,7 +155,7 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
       LogError( "%d: host already registered", client );
     else
     {
-      Log( "registered %s", host );
+      Log( "%d: registered %s", client, host );
       hosts[client] = new Host( host, cpus );
     }
     Unlock( );
@@ -174,6 +174,6 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     return;
   }
 
-  LogError( "unknown message: %s", buffer );
+  LogError( "%d: unknown message: %s", client, buffer );
 }
 
