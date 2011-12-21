@@ -9,7 +9,6 @@
 
 #include <netinet/in.h> // sockaddr_in
 #include <linux/un.h>   // sockaddr_un, UNIX_PATH_MAX
-#include <sys/socket.h> // fd_set
 #include <netdb.h>      // getaddrinfo
 #include <sys/time.h>   // timeval
 #include <unistd.h>     // sleep, exit
@@ -277,8 +276,6 @@ void *SocketHandler::run( void *ptr )
 
 void SocketHandler::Run( )
 {
-  int fdmax;
-  fd_set fds;
   fd_set tmp_fds;
   char buf[2048];
   int readpos = 0;
@@ -355,9 +352,7 @@ void SocketHandler::Run( )
               {
                 if( len != 0 )
                   LogError( "Error receiving data..." );
-                Disconnected( i, len != 0 );
-                close( i );
-                FD_CLR( i, &fds );
+                DisconnectClient( i, len != 0 );
               }
               else
               {
@@ -481,7 +476,7 @@ bool SocketHandler::Send( const char *buffer, int len )
   return true;
 }
 
-bool SocketHandler::Send( int client, const char *buffer, int len )
+bool SocketHandler::SendToClient( int client, const char *buffer, int len )
 {
   if( role != SERVER )
     return false;
@@ -490,9 +485,7 @@ bool SocketHandler::Send( int client, const char *buffer, int len )
   if( n < 0 )
   {
     LogError( "error writing to socket" );
-    Disconnected( client, true );
-    close( client );
-    // FIXME: remove client from fds !
+    DisconnectClient( client );
     return false;
   }
   if( n != len )
@@ -545,6 +538,13 @@ int SocketHandler::Message::AccumulateData( const char *buffer, int length )
     Submit( );
   }
   return i;
+}
+
+void SocketHandler::DisconnectClient( int client, bool error )
+{
+  Disconnected( client, error );
+  close( client );
+  FD_CLR( client, &fds );
 }
 
 bool SocketHandler::Daemonize( const char *user, const char *pidfile )

@@ -68,7 +68,7 @@ void BalanccClient::Disconnected( int client, bool error )
 void BalanccClient::SendLoad( )
 {
   double load[3];
-  if( getloadavg(load, 3) == -1 )
+  if( getloadavg( load, 3 ) == -1 )
   {
     LogError( "cannot get loadavg" );
   }

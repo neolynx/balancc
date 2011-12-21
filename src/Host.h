@@ -9,6 +9,7 @@
 #define _Host_
 
 #include <string>
+#include <time.h>
 
 #include "Slot.h"
 
@@ -22,6 +23,7 @@ class Host
     int cpus;
     float load;
     int usage;
+    time_t lastupdate;
 
   public:
     Host( const char *name, int cpus );
@@ -29,6 +31,7 @@ class Host
     void SetLoad( float load );
     float GetLoad( ) { return load; }
     std::string &GetName( ) { return name; }
+    time_t LastUpdate( ) { return lastupdate; }
 
     bool Assign( );
     bool Release( );

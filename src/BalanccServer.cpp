@@ -84,12 +84,19 @@ std::string BalanccServer::GetHost( Slot slot, bool self )
   return host;
 }
 
-void BalanccServer::Polling( )
+void BalanccServer::Housekeeping( )
 {
+  time_t now = time( NULL );
   Lock( );
   for( iterator_hosts i = hosts.begin( ); i != hosts.end( ); i++ )
   {
-    Send( (*i).first, "?\n", 2 );
+    if( now - (*i).second->LastUpdate( ) > 5 )
+    {
+      Log( "%d: overdue, disconnecting...", (*i).first );
+      Unlock( );
+      DisconnectClient( (*i).first );
+      Lock( );
+    }
   }
   Unlock( );
 }
@@ -110,7 +117,7 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     std::string host = GetHost( slot );
     char buf[64];
     snprintf( buf, sizeof( buf ), "%s %d\n", host.c_str( ), id );
-    Send( client, buf, strlen( buf ));
+    SendToClient( client, buf, strlen( buf ));
     return;
   }
 
@@ -122,7 +129,7 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     std::string host = GetHost( slot, true );
     char buf[64];
     snprintf( buf, sizeof( buf ), "%s %d\n", host.c_str( ), id );
-    Send( client, buf, strlen( buf ));
+    SendToClient( client, buf, strlen( buf ));
     return;
   }
   r = sscanf( buffer, "free %d", &id );
@@ -173,7 +180,6 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     //Log( "%d: got load %f", client, load );
     return;
   }
-
   LogError( "%d: unknown message: %s", client, buffer );
 }
 

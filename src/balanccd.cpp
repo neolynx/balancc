@@ -55,8 +55,8 @@ int main( int argc, char *argv[] )
   int c = 0;
   while( server->isUp( ))
   {
-    if( c++ % 10 == 0 )
-      server->Polling( );
+    if( c++ % 5 == 0 )
+      server->Housekeeping( );
     sleep( 1 );
   }
   server->Stop();

@@ -52,7 +52,7 @@ bool SocketServer::Reply( const char *buffer, int length )
   r = sscanf( buffer, "%s %d", hostname, &id ); // FIXME: overflow
   strncat( hostname, "\n", sizeof( hostname ));
   if( r == 2 )
-    return Send( id, hostname, strlen( hostname ));
+    return SendToClient( id, hostname, strlen( hostname ));
   return false;
 }
 

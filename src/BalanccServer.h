@@ -28,7 +28,7 @@ class BalanccServer : public SocketHandler
   public:
     virtual ~BalanccServer( );
 
-    void Polling( );
+    void Housekeeping( );
 
   protected:
     // Callbacks

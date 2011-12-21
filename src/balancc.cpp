@@ -135,8 +135,13 @@ int main( int argc, char *argv[] )
       return -1;
     }
 
+    int c = 0;
     while( client->isUp( ))
+    {
+      if( c++ % 5 == 0 )
+        client->SendLoad( );
       sleep( 1 );
+    }
     client->Stop();
 
     delete client;

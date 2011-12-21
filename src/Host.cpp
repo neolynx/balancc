@@ -18,6 +18,7 @@ Host::~Host( )
 
 void Host::SetLoad( float load )
 {
+  this->lastupdate = time( NULL );
   this->load = load;
 }
 

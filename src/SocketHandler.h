@@ -8,6 +8,7 @@
 #ifndef _SocketHandler_
 #define _SocketHandler_
 
+#include <sys/socket.h> // fd_set
 #include <pthread.h>
 #include <string>
 #include <map>
@@ -18,6 +19,8 @@ class SocketHandler
     bool connected;
     bool autoreconnect;
     int sd;
+    int fdmax;
+    fd_set fds;
 
     char *host;
     int port;
@@ -60,7 +63,8 @@ class SocketHandler
     void Stop ( );
 
     virtual bool Send( const char *buffer, int len );
-    virtual bool Send( int client, const char *buffer, int len );
+    virtual bool SendToClient( int client, const char *buffer, int len );
+
 
     bool isUp( ) { return up; }
     bool isConnected( ) { return connected; }
@@ -97,6 +101,8 @@ class SocketHandler
     static void Dump( const char *buffer, int length );
 
     virtual Message *CreateMessage( ) const;
+
+    void DisconnectClient( int client, bool error = false );
 
     // Callbacks
     virtual void Connected( int client ) = 0;
