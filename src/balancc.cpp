@@ -159,19 +159,14 @@ int main( int argc, char *argv[] )
 
     if( host == "!" || host == "" )
       host = "localhost";
-    std::ostringstream tmp;
-    tmp << "DISTCC_HOSTS=localhost " << host;
-    if( putenv((char *) tmp.str().c_str()) != 0 )
+    if( setenv( "DISTCC_HOSTS", host.c_str( ), 1 ) != 0 )
     {
       fprintf( stderr, "Cannot set DISTCC_HOSTS environment variable\n" );
     }
-    tmp.str( "BALANCC_HOST=" );
-    tmp << host;
-    if( putenv((char *) tmp.str().c_str()) != 0 )
+    if( setenv( "BALANCC_HOST", host.c_str( ), 1 ) != 0 )
     {
       fprintf( stderr, "Cannot set BALANCC_HOST environment variable\n" );
     }
-
     int status = 0;
     if( nextarg < argc )
     {
