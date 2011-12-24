@@ -32,14 +32,6 @@ void SocketServer::Disconnected( int client, bool error )
   snprintf( buf, sizeof( buf ), "free %d\n", client );
   if( balancclient.isConnected( ))
     balancclient.Send( buf, strlen( buf ));
-  //Lock( );
-  //for( std::deque<int>::iterator i = requests.begin( ); i != requests.end( ); i++ )
-  //if( *i == client )
-  //{
-  //requests.erase( i );
-  //break;
-  //}
-  //Unlock( );
 }
 
 bool SocketServer::Reply( const char *buffer, int length )
@@ -70,10 +62,10 @@ void SocketServer::HandleMessage( const int client, const SocketHandler::Message
       Reply( buf, strlen( buf ));
     }
   }
-  else if( msg.getLine( ) == "+get" )
+  else if( msg.getLine( ) == "-get" )
   {
     char buf[64];
-    snprintf( buf, sizeof( buf ), "+get %d\n", client );
+    snprintf( buf, sizeof( buf ), "-get %d\n", client );
     if( balancclient.isConnected( ))
       balancclient.Send( buf, strlen( buf ));
     else

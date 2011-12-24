@@ -16,7 +16,7 @@
 class SocketClient : public SocketHandler
 {
   public:
-    SocketClient( bool self = false );
+    SocketClient( bool excludeself = false );
     virtual ~SocketClient( );
 
     const std::string &GetHost( );
@@ -29,7 +29,7 @@ class SocketClient : public SocketHandler
   private:
     sem_t host_available;
     std::string host;
-    bool self;
+    bool excludeself;
 };
 
 #endif

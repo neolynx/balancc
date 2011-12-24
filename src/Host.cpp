@@ -7,9 +7,10 @@
 
 #include "Host.h"
 
-Host::Host( const char *name, int cpus ) : name(name), cpus(cpus), usage(0)
+#include <math.h> // NAN
+
+Host::Host( const char *name, int cpus ) : name(name), cpus(cpus), load(NAN), usage(0)
 {
-  load = 1000.0;
 }
 
 Host::~Host( )

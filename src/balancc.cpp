@@ -45,7 +45,7 @@ int main( int argc, char *argv[] )
 {
   int serverport   = 1977;
   char *servername = NULL;
-  bool self = false;
+  bool excludeself = false;
 
   SocketHandler::OpenLog( argv[0] );
 
@@ -78,9 +78,9 @@ int main( int argc, char *argv[] )
       usage( argv[0] );
       return 0;
     }
-    else if( strcmp( "-i", argv[nextarg] ) == 0 ) // include self
+    else if( strcmp( "-e", argv[nextarg] ) == 0 ) // exclude self
     {
-      self = true;
+      excludeself = true;
       nextarg++;
       break;
     }
@@ -152,7 +152,7 @@ int main( int argc, char *argv[] )
   {
     std::string host;
 
-    socketclient = new SocketClient( self );
+    socketclient = new SocketClient( excludeself );
     socketclient->CreateClientUnix( BALANCC_SOCK );
     socketclient->Start( );
     if( socketclient->isConnected( ))
@@ -162,8 +162,12 @@ int main( int argc, char *argv[] )
     else
       fprintf( stderr, "unable to connect to %s\n", BALANCC_SOCK );
 
+    bool fallback = false;
     if( host == "!" || host == "" )
+    {
       host = "localhost";
+      fallback = true;
+    }
     if( setenv( "DISTCC_HOSTS", host.c_str( ), 1 ) != 0 )
     {
       fprintf( stderr, "Cannot set DISTCC_HOSTS environment variable\n" );

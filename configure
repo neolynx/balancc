@@ -5803,7 +5803,7 @@ $as_echo "#define HAVE_WORKING_FORK 1" >>confdefs.h
 
 fi
 
-for ac_func in clock_gettime gethostname memset putenv select socket strerror
+for ac_func in clock_gettime gethostname memset setenv select socket strerror
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"

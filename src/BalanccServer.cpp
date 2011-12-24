@@ -9,6 +9,7 @@
 
 #include <stdio.h>  // sscanf
 #include <string.h> // strncmp
+#include <math.h>   // INF
 
 #include "Host.h"
 
@@ -47,20 +48,36 @@ std::string BalanccServer::GetHost( Slot slot, bool self )
 {
   std::string host = "!";
   Lock( );
-  float t, load = 1000.0;
+  float t, load = INFINITY;
   Host *h = NULL;
-  for( iterator_hosts i = hosts.begin( ); i != hosts.end( ); i++ )
+  if( self )
+    for( iterator_hosts i = hosts.begin( ); i != hosts.end( ); i++ )
+      if( slot.client == (*i).first )
+      {
+        if( (*i).second->IsFree( ))
+        {
+          h = (*i).second;
+          host = "localhost";
+        }
+        break;
+      }
+  if( !h )
   {
-    if( !self && (*i).first == slot.client )
-      continue;
-    if( !(*i).second->IsFree( ))
-      continue;
-    t = (*i).second->GetLoad( );
-    if( t < load )
+    for( iterator_hosts i = hosts.begin( ); i != hosts.end( ); i++ )
     {
-      load = t;
-      h = (*i).second;
+      if( (*i).first == slot.client )
+        continue;
+      if( !(*i).second->IsFree( ))
+        continue;
+      t = (*i).second->GetLoad( );
+      if( t < load )
+      {
+        load = t;
+        h = (*i).second;
+      }
     }
+    if( h ) // found a host
+      host = h->GetName( );
   }
   if( h )
   {
@@ -73,7 +90,6 @@ std::string BalanccServer::GetHost( Slot slot, bool self )
       else
       {
         assignment[slot] = h;
-        host = h->GetName( );
         Log( "%d:%d assigned to %s", slot.client, slot.id, host.c_str( ));
       }
     }
@@ -92,7 +108,7 @@ void BalanccServer::Housekeeping( )
   {
     if( now - (*i).second->LastUpdate( ) > 5 )
     {
-      Log( "%d: overdue, disconnecting...", (*i).first );
+      Log( "%d: timeout, disconnecting...", (*i).first );
       Unlock( );
       DisconnectClient( (*i).first );
       Lock( );
@@ -121,12 +137,12 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     return;
   }
 
-  r = sscanf( buffer, "+get %d", &id ); // host request including self host
+  r = sscanf( buffer, "-get %d", &id ); // host request excluding self host
   if( r == 1 )
   {
     //Log( "host request with id %d:%d", client, id );
     Slot slot( client, id );
-    std::string host = GetHost( slot, true );
+    std::string host = GetHost( slot, false );
     char buf[64];
     snprintf( buf, sizeof( buf ), "%s %d\n", host.c_str( ), id );
     SendToClient( client, buf, strlen( buf ));

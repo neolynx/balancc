@@ -23,7 +23,7 @@ class BalanccServer : public SocketHandler
     typedef std::map<int, Host *>::iterator iterator_hosts;
     map_Slot assignment;
 
-    std::string GetHost( Slot slot, bool self = false );
+    std::string GetHost( Slot slot, bool self = true );
 
   public:
     virtual ~BalanccServer( );

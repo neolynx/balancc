@@ -10,7 +10,7 @@
 #include <errno.h> // errno
 #include <time.h>  // clock_gettime
 
-SocketClient::SocketClient( bool self ) : self(self)
+SocketClient::SocketClient( bool excludeself ) : excludeself(excludeself)
 {
   if( sem_init( &host_available, 0, 0 ))
   {
@@ -25,8 +25,8 @@ SocketClient::~SocketClient( )
 
 void SocketClient::Connected( int client )
 {
-  if( self )
-    Send( "+get\n", 5 );
+  if( excludeself )
+    Send( "-get\n", 5 );
   else
     Send( "get\n", 4 );
 }
