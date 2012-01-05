@@ -7,8 +7,9 @@
 
 #include "SocketServer.h"
 
-#include <stdio.h>  // sscanf
-#include <string.h> // strncmp
+#include <stdio.h>   // sscanf
+#include <string.h>  // strncmp
+#include <algorithm> // find
 
 #include "BalanccClient.h"
 
@@ -28,34 +29,47 @@ void SocketServer::Connected( int client )
 void SocketServer::Disconnected( int client, bool error )
 {
   //  Log( "%d: client disconnected, error=%d\n", client, error );
-  char buf[64];
-  snprintf( buf, sizeof( buf ), "free %d\n", client );
   if( balancclient.isConnected( ))
-    balancclient.Send( buf, strlen( buf ));
+  {
+    // if host was not assigned, do not free
+    std::vector<int>::iterator i;
+    if(( i = std::find( failed.begin( ), failed.end( ), client )) != failed.end( ))
+      failed.erase( i );
+    else
+    {
+      char buf[64];
+      snprintf( buf, sizeof( buf ), "free %d\n", client );
+      balancclient.Send( buf, strlen( buf ));
+    }
+  }
 }
 
 bool SocketServer::Reply( const char *buffer, int length )
 {
-  //const char *buffer = msg.getLine( ).c_str( );
-  //int length = msg.getLine( ).length( );
   int id;
   char hostname[64];
-  int r;
-  r = sscanf( buffer, "%s %d", hostname, &id ); // FIXME: overflow
-  strncat( hostname, "\n", sizeof( hostname ));
+  int r = sscanf( buffer, "%s %d", hostname, &id ); // FIXME: overflow
   if( r == 2 )
+  {
+    if( hostname[0] == '!' )
+      failed.push_back( id ); // remember to not free unassigned host
+    strncat( hostname, "\n", sizeof( hostname ));
     return SendToClient( id, hostname, strlen( hostname ));
+  }
+  // FIXME: else Log
   return false;
 }
 
 void SocketServer::HandleMessage( const int client, const SocketHandler::Message &msg )
 {
+  char buf[64];
   if( msg.getLine( ) == "get" )
   {
-    char buf[64];
-    snprintf( buf, sizeof( buf ), "get %d\n", client );
     if( balancclient.isConnected( ))
+    {
+      snprintf( buf, sizeof( buf ), "get %d\n", client );
       balancclient.Send( buf, strlen( buf ));
+    }
     else
     {
       snprintf( buf, sizeof( buf ), "! %d\n", client );
@@ -64,10 +78,11 @@ void SocketServer::HandleMessage( const int client, const SocketHandler::Message
   }
   else if( msg.getLine( ) == "-get" )
   {
-    char buf[64];
-    snprintf( buf, sizeof( buf ), "-get %d\n", client );
     if( balancclient.isConnected( ))
+    {
+      snprintf( buf, sizeof( buf ), "-get %d\n", client );
       balancclient.Send( buf, strlen( buf ));
+    }
     else
     {
       snprintf( buf, sizeof( buf ), "! %d\n", client );
