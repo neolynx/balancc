@@ -1,27 +1,13 @@
-#!/bin/sh -e
-# postrm script for balancc
+#!/bin/sh
 
 BALANCC_USER=balancc
 default=/etc/default/balancc
 
-case "$1" in
-  purge)
+if [ "$1" = "purge" ] ; then
     rm -f $default
-    update-rc.d balancc remove >/dev/null
     if id $BALANCC_USER > /dev/null 2>&1; then
         deluser --quiet --system $BALANCC_USER
     fi
-    ;;
-  remove)
-    ;;
-  upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
-    ;;
-  *)
-    echo "postrm called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+fi
 
 #DEBHELPER#

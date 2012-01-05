@@ -41,7 +41,7 @@ if [ -f /etc/default/$NAME ] ; then
   . /etc/default/$NAME
 fi
 
-if [ -z "$SERVER" ]; then
+if [ "$SERVER" != "yes" -a -z "$USE_SERVER" ]; then
   log_warning_msg "please edit /etc/default/$NAME to enable $NAME"
   exit 0
 fi
