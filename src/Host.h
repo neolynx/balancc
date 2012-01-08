@@ -30,6 +30,7 @@ class Host
     ~Host( );
     void SetLoad( float load );
     float GetLoad( ) { return load; }
+    float GetSlots( ) { return cpus * SLOTS_PER_CPU + SLOTS_ADDITIONAL; }
     std::string &GetName( ) { return name; }
     time_t LastUpdate( ) { return lastupdate; }
 

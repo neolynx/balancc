@@ -13,6 +13,7 @@
 #include <unistd.h> // gethostname
 
 #include "SocketServer.h"
+#include "Host.h"
 
 #define LINE_MAX 255
 
@@ -91,5 +92,10 @@ void BalanccClient::HandleMessage( const int client, const SocketHandler::Messag
     message += "\n";
     socketserver->Reply( message.c_str( ), message.length( ));
   }
+}
+
+int BalanccClient::GetSlots( )
+{
+  return ncpu * SLOTS_PER_CPU + SLOTS_ADDITIONAL;
 }
 

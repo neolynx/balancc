@@ -162,19 +162,25 @@ int main( int argc, char *argv[] )
     else
       fprintf( stderr, "unable to connect to %s\n", BALANCC_SOCK );
 
-    bool fallback = false;
     if( host == "!" || host == "" )
     {
       host = "localhost";
-      fallback = true;
-    }
-    if( setenv( "DISTCC_HOSTS", host.c_str( ), 1 ) != 0 )
-    {
-      fprintf( stderr, "Cannot set DISTCC_HOSTS environment variable\n" );
     }
     if( setenv( "BALANCC_HOST", host.c_str( ), 1 ) != 0 )
     {
       fprintf( stderr, "Cannot set BALANCC_HOST environment variable\n" );
+    }
+    if( host == "localhost" )
+    {
+      char t[32];
+      client = new BalanccClient( );
+      snprintf( t, sizeof( t ), "/%d", client->GetSlots( ));
+      delete client;
+      host += t;
+    }
+    if( setenv( "DISTCC_HOSTS", host.c_str( ), 1 ) != 0 )
+    {
+      fprintf( stderr, "Cannot set DISTCC_HOSTS environment variable\n" );
     }
     int status = 0;
     if( nextarg < argc )

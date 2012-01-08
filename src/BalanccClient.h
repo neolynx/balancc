@@ -20,6 +20,7 @@ class BalanccClient : public SocketHandler
 
     void SetSocketServer( SocketServer *socketserver );
     void SendLoad( );
+    int GetSlots( );
 
   protected:
     virtual void Connected   ( int client );
