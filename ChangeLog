@@ -1,9 +1,10 @@
 balancc (0.3) unstable; urgency=low
 
   * Fixed connection handling
-  * Prefer localhost assignment over distribution per default
+  * Prefer localhost assignment
+  * Revome pidfile on termination
 
- -- André Roth <neolynx@gmail.com>  Fri, 23 Dec 2011 21:38:56 +0100
+ -- André Roth <neolynx@gmail.com>  Sun, 08 Jan 2012 17:30:53 +0100
 
 balancc (0.2) unstable; urgency=low
 

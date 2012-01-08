@@ -30,6 +30,8 @@ SocketHandler::~SocketHandler()
 {
   Stop( );
   closelog( );
+  if( pidfile != "" )
+    unlink( pidfile.c_str( ));
 }
 
 bool SocketHandler::CreateClient( SocketType sockettype, const char *host, int port, const char *socket, bool autoreconnect )
@@ -561,7 +563,7 @@ bool SocketHandler::Daemonize( const char *user, const char *pidfile )
     LogError( "fork error" );
     return false;
   }
-  if( pid > 0 )
+  if( pid > 0 ) // parent
   {
     if( pidfile ) // FIXME: remove pidfile on exit
     {
@@ -582,6 +584,8 @@ bool SocketHandler::Daemonize( const char *user, const char *pidfile )
   }
 
   // child
+  if( pidfile )
+    this->pidfile = pidfile;
   if( user )
   {
     struct passwd *pwd = getpwnam( user );

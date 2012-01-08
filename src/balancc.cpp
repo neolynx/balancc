@@ -112,7 +112,7 @@ int main( int argc, char *argv[] )
     chmod( BALANCC_SOCK, 0666 );
     client->SetSocketServer( server );
 
-    if( !SocketHandler::Daemonize( "balancc", "/var/run/balancc.pid" ))
+    if( !server->Daemonize( "balancc", "/var/run/balancc.pid" ))
     {
       SocketHandler::LogError( "failed to create daemon" );
       delete client;
