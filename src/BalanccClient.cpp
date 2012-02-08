@@ -52,6 +52,7 @@ void BalanccClient::SetSocketServer( SocketServer *socketserver )
 
 void BalanccClient::Connected( int client )
 {
+  LogNotice( "connected to server" );
   char buf[128];
   snprintf( buf, sizeof( buf ), "host %s %d\n", hostname, ncpu );
   if( !Send( buf, strlen( buf )))
@@ -63,11 +64,13 @@ void BalanccClient::Connected( int client )
 
 void BalanccClient::Disconnected( int client, bool error )
 {
-  //  Log( "%d: client disconnected, error=%d", client, error );
+  LogNotice( "connection to server lost" );
 }
 
 void BalanccClient::SendLoad( )
 {
+  if( !isConnected( ))
+    return;
   double load[3];
   if( getloadavg( load, 3 ) == -1 )
   {
@@ -96,6 +99,6 @@ void BalanccClient::HandleMessage( const int client, const SocketHandler::Messag
 
 int BalanccClient::GetSlots( )
 {
-  return ncpu * SLOTS_PER_CPU + SLOTS_ADDITIONAL;
+  return SLOTS_LOCAL;
 }
 

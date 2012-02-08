@@ -193,6 +193,7 @@ bool SocketHandler::Bind( )
         ok = bind( sd, (struct sockaddr*) &addr, sizeof( addr )) == 0;
         if( !ok )
           LogError( "binding socket %s failed", this->socket );
+        break;
       }
     case TCP:
       {
@@ -204,6 +205,7 @@ bool SocketHandler::Bind( )
         ok = bind( sd, (struct sockaddr*) &addr, sizeof( addr )) == 0;
         if( !ok )
           LogError( "binding port %d failed", port );
+        break;
       }
   }
   return ok;
@@ -628,7 +630,7 @@ void SocketHandler::Log( const char *fmt, ... )
     vsyslog( LOG_INFO, fmt, ap );
   else
   {
-    printf( "LOG    " );
+    printf( "INFO   " );
     vprintf( fmt, ap );
     printf( "\n" );
   }

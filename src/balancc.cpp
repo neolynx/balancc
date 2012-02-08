@@ -46,8 +46,7 @@ int main( int argc, char *argv[] )
   int serverport   = 1977;
   char *servername = NULL;
   bool excludeself = false;
-
-  SocketHandler::OpenLog( argv[0] );
+  bool debug = false;
 
   signal( SIGINT, sighandler );
   signal( SIGTERM, sighandler );
@@ -63,6 +62,10 @@ int main( int argc, char *argv[] )
         return -1;
       }
       servername = argv[nextarg];
+    }
+    else if( strcmp( "-d", argv[nextarg] ) == 0 ) // debug
+    {
+      debug = true;
     }
     else if( strcmp( "-p", argv[nextarg] ) == 0 ) // port
     {
@@ -90,9 +93,12 @@ int main( int argc, char *argv[] )
     }
   }
 
+  if( !debug )
+    SocketHandler::OpenLog( argv[0] );
+
   if( servername )
   {
-    SocketHandler::Log( "started" );
+    SocketHandler::Log( "balancc started" );
     client = new BalanccClient( );
     if( !client->CreateClientTCP( servername, serverport, true ))
     {
@@ -104,7 +110,6 @@ int main( int argc, char *argv[] )
     server = new SocketServer( *client );
     if( !server->CreateServerUnix( BALANCC_SOCK ))
     {
-      SocketHandler::LogError( "socket server creation failed" );
       delete client;
       delete server;
       return -1;
@@ -112,13 +117,14 @@ int main( int argc, char *argv[] )
     chmod( BALANCC_SOCK, 0666 );
     client->SetSocketServer( server );
 
-    if( !server->Daemonize( "balancc", "/var/run/balancc.pid" ))
-    {
-      SocketHandler::LogError( "failed to create daemon" );
-      delete client;
-      delete server;
-      return -1;
-    }
+    if( !debug )
+      if( !server->Daemonize( "balancc", "/var/run/balancc.pid" ))
+      {
+        SocketHandler::LogError( "failed to create daemon" );
+        delete client;
+        delete server;
+        return -1;
+      }
 
     if( !client->Start( ))
     {
@@ -146,7 +152,7 @@ int main( int argc, char *argv[] )
 
     delete client;
     delete server;
-    SocketHandler::Log( "terminated" );
+    SocketHandler::Log( "balancc terminated" );
   }
   else // Get host from server
   {
@@ -160,7 +166,7 @@ int main( int argc, char *argv[] )
       host = socketclient->GetHost( );
     }
     else
-      fprintf( stderr, "unable to connect to %s\n", BALANCC_SOCK );
+      SocketHandler::LogError( "unable to connect to %s", BALANCC_SOCK );
 
     if( host == "!" || host == "" )
     {
@@ -168,7 +174,7 @@ int main( int argc, char *argv[] )
     }
     if( setenv( "BALANCC_HOST", host.c_str( ), 1 ) != 0 )
     {
-      fprintf( stderr, "Cannot set BALANCC_HOST environment variable\n" );
+      SocketHandler::LogError( "Cannot set BALANCC_HOST environment variable" );
     }
     if( host == "localhost" )
     {
@@ -180,7 +186,7 @@ int main( int argc, char *argv[] )
     }
     if( setenv( "DISTCC_HOSTS", host.c_str( ), 1 ) != 0 )
     {
-      fprintf( stderr, "Cannot set DISTCC_HOSTS environment variable\n" );
+      SocketHandler::LogError( "Cannot set DISTCC_HOSTS environment variable" );
     }
     int status = 0;
     if( nextarg < argc )
@@ -191,13 +197,13 @@ int main( int argc, char *argv[] )
         /* child process */
         if( execvp( argv[nextarg], &argv[nextarg]) < 0 )
         {
-          fprintf( stderr, "execvp failed: err %s\n", strerror( errno ));
+          SocketHandler::LogError( "execvp failed: err %s", strerror( errno ));
           return -1;
         }
       }
       else if( pid < 0)
       {
-        fprintf( stderr, "Failed to fork a process!\n" );
+        SocketHandler::LogError( "can not fork" );
         return -1;
       }
 

@@ -15,6 +15,7 @@
 
 #define SLOTS_PER_CPU    2
 #define SLOTS_ADDITIONAL 1
+#define SLOTS_LOCAL      3
 
 class Host
 {
