@@ -16,6 +16,7 @@
 class SocketHandler
 {
   private:
+    static bool log2syslog;
     bool connected;
     bool autoreconnect;
     int sd;

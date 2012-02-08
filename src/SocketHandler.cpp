@@ -21,6 +21,8 @@
 #include <stdarg.h>     // va_start, va_end
 #include <fcntl.h>      // creat
 
+bool SocketHandler::log2syslog = false;
+
 SocketHandler::SocketHandler() : up(false), connected(false), autoreconnect(false), sd(0), host(NULL), port(0), socket(0)
 {
   pthread_mutex_init( &mutex, 0 );
@@ -77,7 +79,6 @@ bool SocketHandler::CreateServer( SocketType sockettype, int port, const char *s
 
   if( !Bind( ))
   {
-    LogError( "bind failed" );
     goto errorexit;
   }
 
@@ -178,6 +179,7 @@ errorexit:
 
 bool SocketHandler::Bind( )
 {
+  bool ok = false;
   switch( sockettype )
   {
     case UNIX:
@@ -188,7 +190,9 @@ bool SocketHandler::Bind( )
         strncat( addr.sun_path, this->socket, UNIX_PATH_MAX - 1 );
         // FIXME: verify it's a socket
         unlink( this->socket );
-        return ( bind( sd, (struct sockaddr*) &addr, sizeof( addr )) == 0 );
+        ok = bind( sd, (struct sockaddr*) &addr, sizeof( addr )) == 0;
+        if( !ok )
+          LogError( "binding socket %s failed", this->socket );
       }
     case TCP:
       {
@@ -197,9 +201,12 @@ bool SocketHandler::Bind( )
         addr.sin_family      = AF_INET;
         addr.sin_port        = htons( port );
         addr.sin_addr.s_addr = INADDR_ANY;
-        return ( bind( sd, (struct sockaddr*) &addr, sizeof( addr )) == 0 );
+        ok = bind( sd, (struct sockaddr*) &addr, sizeof( addr )) == 0;
+        if( !ok )
+          LogError( "binding port %d failed", port );
       }
   }
+  return ok;
 }
 
 bool SocketHandler::Connect( )
@@ -610,13 +617,21 @@ bool SocketHandler::Daemonize( const char *user, const char *pidfile )
 void SocketHandler::OpenLog( const char *prog )
 {
   openlog( prog, LOG_PID | LOG_NDELAY, LOG_DAEMON );
+  log2syslog = true;
 }
 
 void SocketHandler::Log( const char *fmt, ... )
 {
   va_list ap;
   va_start( ap, fmt );
-  vsyslog( LOG_INFO, fmt, ap );
+  if( log2syslog )
+    vsyslog( LOG_INFO, fmt, ap );
+  else
+  {
+    printf( "LOG    " );
+    vprintf( fmt, ap );
+    printf( "\n" );
+  }
   va_end( ap );
 }
 
@@ -624,7 +639,14 @@ void SocketHandler::LogNotice( const char *fmt, ... )
 {
   va_list ap;
   va_start( ap, fmt );
-  vsyslog( LOG_NOTICE, fmt, ap );
+  if( log2syslog )
+    vsyslog( LOG_NOTICE, fmt, ap );
+  else
+  {
+    printf( "NOTICE " );
+    vprintf( fmt, ap );
+    printf( "\n" );
+  }
   va_end( ap );
 }
 
@@ -632,7 +654,14 @@ void SocketHandler::LogWarn( const char *fmt, ... )
 {
   va_list ap;
   va_start( ap, fmt );
-  vsyslog( LOG_WARNING, fmt, ap );
+  if( log2syslog )
+    vsyslog( LOG_WARNING, fmt, ap );
+  else
+  {
+    printf( "WARN   " );
+    vprintf( fmt, ap );
+    printf( "\n" );
+  }
   va_end( ap );
 }
 
@@ -640,7 +669,14 @@ void SocketHandler::LogError( const char *fmt, ... )
 {
   va_list ap;
   va_start( ap, fmt );
-  vsyslog( LOG_ERR, fmt, ap );
+  if( log2syslog )
+    vsyslog( LOG_ERR, fmt, ap );
+  else
+  {
+    fprintf( stderr, "ERROR  " );
+    vfprintf( stderr, fmt, ap );
+    fprintf( stderr, "\n" );
+  }
   va_end( ap );
 }
 

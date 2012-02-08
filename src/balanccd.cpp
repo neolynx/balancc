@@ -9,6 +9,8 @@
 
 #include <unistd.h> // sleep
 #include <signal.h>
+#include <stdio.h>  // printf
+#include <stdlib.h> // exit
 
 int PORT = 1977;
 
@@ -20,15 +22,37 @@ void sighandler( int signum )
     server->Stop();
 }
 
+void usage( char *prog )
+{
+  printf( "Usage: %s [-d]\n", prog );
+  printf( "  -d     debug, do not fork, log to console\n" );
+  exit( -1 );
+}
+
 int main( int argc, char *argv[] )
 {
   signal( SIGINT, sighandler ); // FIXME: use sigaction
   signal( SIGTERM, sighandler ); // FIXME: use sigaction
 
-  SocketHandler::OpenLog( argv[0] );
-  //FIXME: parse arguments
+  bool debug = false;
 
-  SocketHandler::Log( "started" );
+  int opt;
+  while(( opt = getopt( argc, argv, "d" )) != -1 )
+  {
+    switch( opt )
+    {
+      case 'd':
+        debug = true;
+        break;
+      default:
+        usage( argv[0] );
+    }
+  }
+
+  if( !debug )
+    SocketHandler::OpenLog( argv[0] );
+
+  SocketHandler::Log( "balanccd started" );
 
   server = new BalanccServer( );
   if( !server->CreateServerTCP( PORT ))
@@ -38,12 +62,13 @@ int main( int argc, char *argv[] )
     return -1;
   }
 
-  if( !server->Daemonize( "balancc", "/var/run/balanccd.pid" ))
-  {
-    SocketHandler::LogError( "failed to create daemon" );
-    delete server;
-    return -1;
-  }
+  if( !debug )
+    if( server->Daemonize( "balancc", "/var/run/balanccd.pid" ))
+    {
+      SocketHandler::LogError( "failed to create daemon" );
+      delete server;
+      return -1;
+    }
 
   if( !server->Start( ))
   {
@@ -61,7 +86,7 @@ int main( int argc, char *argv[] )
   }
   server->Stop();
   delete server;
-  SocketHandler::Log( "terminated" );
+  SocketHandler::Log( "balanccd terminated" );
   return 0;
 }
 
