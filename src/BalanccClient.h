@@ -15,12 +15,11 @@ class SocketServer;
 class BalanccClient : public SocketHandler
 {
   public:
-    BalanccClient( );
+    BalanccClient( float loadlimit, int slots );
     virtual ~BalanccClient( );
 
     void SetSocketServer( SocketServer *socketserver );
     void SendLoad( );
-    int GetSlots( );
 
   protected:
     virtual void Connected   ( int client );
@@ -31,6 +30,8 @@ class BalanccClient : public SocketHandler
     SocketServer *socketserver;
     char hostname[64];
     int ncpu;
+    float loadlimit;
+    int slots;
 };
 
 #endif

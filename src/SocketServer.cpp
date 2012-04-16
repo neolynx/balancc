@@ -47,16 +47,22 @@ void SocketServer::Disconnected( int client, bool error )
 bool SocketServer::Reply( const char *buffer, int length )
 {
   int id;
-  char hostname[64];
-  int r = sscanf( buffer, "%s %d", hostname, &id ); // FIXME: overflow
+  char buf[128];
+  int r = sscanf( buffer, "%s %d", buf, &id ); // FIXME: overflow
   if( r == 2 )
   {
-    if( hostname[0] == '!' )
+    if( buf[0] == '!' )
       failed.push_back( id ); // remember to not free unassigned host
-    strncat( hostname, "\n", sizeof( hostname ));
-    return SendToClient( id, hostname, strlen( hostname ));
+    strncat( buf, "\n", sizeof( buf ));
+    return SendToClient( id, buf, strlen( buf ));
   }
-  // FIXME: else Log
+
+  r = sscanf( buffer, "%d: ", &id );
+  {
+    strncpy( buf, buffer + 3, sizeof( buf ));
+    strncat( buf, "\n", sizeof( buf ));
+    return SendToClient( id, buf, strlen( buf ));
+  }
   return false;
 }
 
@@ -87,6 +93,15 @@ void SocketServer::HandleMessage( const int client, const SocketHandler::Message
     {
       snprintf( buf, sizeof( buf ), "! %d\n", client );
       Reply( buf, strlen( buf ));
+    }
+  }
+  else if( msg.getLine( ) == "info" )
+  {
+    if( balancclient.isConnected( ))
+    {
+      failed.push_back( client ); // remember to not free unassigned host
+      snprintf( buf, sizeof( buf ), "info %d\n", client );
+      balancclient.Send( buf, strlen( buf ));
     }
   }
   else

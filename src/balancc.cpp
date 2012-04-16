@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/stat.h> // chmod
+#include <math.h>   // NAN
 
 #include "BalanccClient.h"
 #include "SocketClient.h"
@@ -24,6 +25,8 @@ SocketServer *server = NULL;
 SocketClient *socketclient = NULL;
 
 #define BALANCC_SOCK "/var/run/balancc.sock"
+
+#define SLOTS_LOCAL      2
 
 void sighandler( int signum )
 {
@@ -43,10 +46,13 @@ void usage( char *prog )
 
 int main( int argc, char *argv[] )
 {
-  int serverport   = 1977;
-  char *servername = NULL;
-  bool excludeself = false;
-  bool debug = false;
+  int   serverport  = 1977;
+  char *servername  = NULL;
+  bool  excludeself = false;
+  float loadlimit   = NAN;
+  int   slots       = 0;
+  bool  debug       = false;
+  bool  info        = false;
 
   signal( SIGINT, sighandler );
   signal( SIGTERM, sighandler );
@@ -84,7 +90,31 @@ int main( int argc, char *argv[] )
     else if( strcmp( "-e", argv[nextarg] ) == 0 ) // exclude self
     {
       excludeself = true;
-      nextarg++;
+      break;
+    }
+    else if( strcmp( "-i", argv[nextarg] ) == 0 ) // info
+    {
+      info = true;
+      break;
+    }
+    else if( strcmp( "-l", argv[nextarg] ) == 0 ) // load limit
+    {
+      if( ++nextarg >= argc )
+      {
+        usage( argv[0] );
+        return -1;
+      }
+      loadlimit = atof( argv[nextarg] );
+      break;
+    }
+    else if( strcmp( "-n", argv[nextarg] ) == 0 ) // number of slots
+    {
+      if( ++nextarg >= argc )
+      {
+        usage( argv[0] );
+        return -1;
+      }
+      slots = atoi( argv[nextarg] );
       break;
     }
     else
@@ -99,7 +129,7 @@ int main( int argc, char *argv[] )
   if( servername )
   {
     SocketHandler::Log( "balancc started" );
-    client = new BalanccClient( );
+    client = new BalanccClient( loadlimit, slots );
     if( !client->CreateClientTCP( servername, serverport, true ))
     {
       SocketHandler::LogError( "tcp client creation failed" );
@@ -154,66 +184,75 @@ int main( int argc, char *argv[] )
     delete server;
     SocketHandler::Log( "balancc terminated" );
   }
-  else // Get host from server
+  else // Get info/host from server
   {
+    if( slots == 0 )
+      slots = SLOTS_LOCAL;
+
     std::string host;
 
-    socketclient = new SocketClient( excludeself );
+    socketclient = new SocketClient( );
     socketclient->CreateClientUnix( BALANCC_SOCK );
     socketclient->Start( );
     if( socketclient->isConnected( ))
     {
-      host = socketclient->GetHost( );
+      if( info )
+        socketclient->GetInfo( );
+      else
+        host = socketclient->GetHost( excludeself );
     }
     else
       SocketHandler::LogError( "unable to connect to %s", BALANCC_SOCK );
 
-    if( host == "!" || host == "" )
+    if( !info )
     {
-      host = "localhost";
-    }
-    if( setenv( "BALANCC_HOST", host.c_str( ), 1 ) != 0 )
-    {
-      SocketHandler::LogError( "Cannot set BALANCC_HOST environment variable" );
-    }
-    if( host == "localhost" )
-    {
-      char t[32];
-      client = new BalanccClient( );
-      snprintf( t, sizeof( t ), "/%d", client->GetSlots( ));
-      delete client;
-      host += t;
-    }
-    if( setenv( "DISTCC_HOSTS", host.c_str( ), 1 ) != 0 )
-    {
-      SocketHandler::LogError( "Cannot set DISTCC_HOSTS environment variable" );
-    }
-    int status = 0;
-    if( nextarg < argc )
-    {
-      int pid = fork( );
-      if( pid == 0 )
+      if( host == "!" || host == "" )
       {
-        /* child process */
-        if( execvp( argv[nextarg], &argv[nextarg]) < 0 )
+        host = "localhost";
+      }
+      if( setenv( "BALANCC_HOST", host.c_str( ), 1 ) != 0 )
+      {
+        SocketHandler::LogError( "Cannot set BALANCC_HOST environment variable" );
+      }
+      if( host == "localhost" )
+      {
+        char t[32];
+        snprintf( t, sizeof( t ), "/%d", slots );
+        host += t;
+      }
+      if( setenv( "DISTCC_HOSTS", host.c_str( ), 1 ) != 0 )
+      {
+        SocketHandler::LogError( "Cannot set DISTCC_HOSTS environment variable" );
+      }
+      int status = 0;
+      if( nextarg < argc )
+      {
+        int pid = fork( );
+        if( pid == 0 )
         {
-          SocketHandler::LogError( "execvp failed: err %s", strerror( errno ));
+          /* child process */
+          if( execvp( argv[nextarg], &argv[nextarg]) < 0 )
+          {
+            SocketHandler::LogError( "execvp failed: err %s", strerror( errno ));
+            return -1;
+          }
+        }
+        else if( pid < 0)
+        {
+          SocketHandler::LogError( "can not fork" );
           return -1;
         }
-      }
-      else if( pid < 0)
-      {
-        SocketHandler::LogError( "can not fork" );
-        return -1;
-      }
 
-      // parent
-      wait( &status );
-      socketclient->Stop( );
-      delete socketclient;
+        // parent
+        wait( &status );
+        socketclient->Stop( );
+        delete socketclient;
 
-      return WEXITSTATUS(status);
-    }
+        return WEXITSTATUS(status);
+      }
+    } // !inifo
+    socketclient->Stop( );
+    delete socketclient;
   } // get host from server
   return 0;
 }

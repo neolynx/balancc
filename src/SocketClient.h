@@ -16,10 +16,12 @@
 class SocketClient : public SocketHandler
 {
   public:
-    SocketClient( bool excludeself = false );
+    SocketClient( );
     virtual ~SocketClient( );
 
-    const std::string &GetHost( );
+    const std::string &GetHost( bool excludeself );
+
+    void GetInfo( );
 
   protected:
     virtual void Connected   ( int client );
@@ -29,7 +31,8 @@ class SocketClient : public SocketHandler
   private:
     sem_t host_available;
     std::string host;
-    bool excludeself;
+
+    bool info;
 };
 
 #endif

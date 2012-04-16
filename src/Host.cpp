@@ -9,8 +9,17 @@
 
 #include <math.h> // NAN
 
-Host::Host( const char *name, int cpus ) : name(name), cpus(cpus), load(NAN), usage(0)
+Host::Host( const char *name, int cpus, float loadlimit, int slots ) :
+  name(name),
+  cpus(cpus),
+  loadlimit(loadlimit),
+  slots(slots),
+  load(NAN),
+  usage(0),
+  assigned(0)
 {
+  if( slots == 0 )
+    this->slots = cpus * SLOTS_PER_CPU + SLOTS_ADDITIONAL;
 }
 
 Host::~Host( )
@@ -25,9 +34,10 @@ void Host::SetLoad( float load )
 
 bool Host::Assign( )
 {
-  if( usage == cpus * SLOTS_PER_CPU + SLOTS_ADDITIONAL )
+  if( usage == slots )
     return false;
   usage++;
+  assigned++;
   return true;
 }
 
@@ -41,6 +51,6 @@ bool Host::Release( )
 
 bool Host::IsFree( )
 {
-  return usage < cpus * SLOTS_PER_CPU + SLOTS_ADDITIONAL;
+  return ( usage < slots ) && ( load < loadlimit );
 }
 

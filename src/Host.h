@@ -15,7 +15,7 @@
 
 #define SLOTS_PER_CPU    2
 #define SLOTS_ADDITIONAL 1
-#define SLOTS_LOCAL      3
+#define LOADLIMIT        3.0
 
 class Host
 {
@@ -25,15 +25,20 @@ class Host
     float load;
     int usage;
     time_t lastupdate;
+    float loadlimit;
+    int slots;
+    unsigned int assigned;
 
   public:
-    Host( const char *name, int cpus );
+    Host( const char *name, int cpus, float loadlimit, int slots );
     ~Host( );
     void SetLoad( float load );
     float GetLoad( ) { return load; }
-    float GetSlots( ) { return cpus * SLOTS_PER_CPU + SLOTS_ADDITIONAL; }
+    float GetLoadLimit( ) { return loadlimit; }
+    int GetSlots( ) { return slots; }
     std::string &GetName( ) { return name; }
     time_t LastUpdate( ) { return lastupdate; }
+    unsigned int GetAssignCount( ) { return assigned; }
 
     bool Assign( );
     bool Release( );

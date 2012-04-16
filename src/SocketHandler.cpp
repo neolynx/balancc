@@ -607,9 +607,15 @@ bool SocketHandler::Daemonize( const char *user, const char *pidfile )
   umask( 0 );
   sid = setsid( );
   if( sid < 0 )
+  {
+    LogError( "setsid failed" );
     return false;
+  }
   if(( chdir( "/" )) < 0 )
+  {
+    LogError( "cannot chdir( \"/\" )" );
     return false;
+  }
   freopen( "/dev/null", "r", stdin );
   freopen( "/dev/null", "w", stdout );
   freopen( "/dev/null", "w", stderr );

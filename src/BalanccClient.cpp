@@ -17,7 +17,7 @@
 
 #define LINE_MAX 255
 
-BalanccClient::BalanccClient( )
+BalanccClient::BalanccClient( float loadlimit, int slots ) : loadlimit(loadlimit), slots(slots)
 {
   socketserver = NULL;
   if( gethostname( hostname, sizeof( hostname )) < 0 )
@@ -54,7 +54,7 @@ void BalanccClient::Connected( int client )
 {
   LogNotice( "connected to server" );
   char buf[128];
-  snprintf( buf, sizeof( buf ), "host %s %d\n", hostname, ncpu );
+  snprintf( buf, sizeof( buf ), "host %s %d %f %d\n", hostname, ncpu, loadlimit, slots );
   if( !Send( buf, strlen( buf )))
   {
     LogError( "error sending hostname" );
@@ -97,8 +97,4 @@ void BalanccClient::HandleMessage( const int client, const SocketHandler::Messag
   }
 }
 
-int BalanccClient::GetSlots( )
-{
-  return SLOTS_LOCAL;
-}
 

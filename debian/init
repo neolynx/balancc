@@ -36,17 +36,20 @@ test -x $SERVER_DAEMON || exit 0
 
 . /lib/lsb/init-functions
 
-# Include defaults if available
-if [ -f /etc/default/$NAME ] ; then
-  . /etc/default/$NAME
+if [ ! -f /etc/default/$NAME ] ; then
+  log_error_msg "/etc/default/$NAME not found"
+  exit 1
 fi
+
+. /etc/default/$NAME
+
 
 if [ "$SERVER" != "yes" -a -z "$USE_SERVER" ]; then
   log_warning_msg "please edit /etc/default/$NAME to enable $NAME"
   exit 0
 fi
 
-CLIENT_OPTS="-s $USE_SERVER"
+CLIENT_OPTS="-s $USE_SERVER -n $SLOTS -l $LOADLIMMIT"
 set -e
 
 running()

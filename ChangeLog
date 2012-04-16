@@ -1,3 +1,9 @@
+balancc (0.5) unstable; urgency=low
+
+  * Added options for load limit and slots
+
+ -- André Roth <neolynx@gmail.com>  Sun, 15 Apr 2012 23:19:48 +0200
+
 balancc (0.4) unstable; urgency=low
 
   * Debug mode

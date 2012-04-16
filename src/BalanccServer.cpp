@@ -148,6 +148,29 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     SendToClient( client, buf, strlen( buf ));
     return;
   }
+
+  r = sscanf( buffer, "info %d", &id ); // info
+  if( r == 1 )
+  {
+    char buf[128];
+    snprintf( buf, sizeof( buf ), "%d: Available Hosts\n", id );
+    SendToClient( client, buf, strlen( buf ));
+    snprintf( buf, sizeof( buf ), "%d: ----------------\n", id );
+    SendToClient( client, buf, strlen( buf ));
+    snprintf( buf, sizeof( buf ), "%d: Hostname         Slots Load/Limit Jobs\n", id );
+    SendToClient( client, buf, strlen( buf ));
+    Lock( );
+    Host *h = NULL;
+    for( iterator_hosts i = hosts.begin( ); i != hosts.end( ); i++ )
+    {
+      h = (*i).second;
+      snprintf( buf, sizeof( buf ), "%d:  %-16.16s  %2d  %2.2f %2.2f  %d\n", id, h->GetName( ).c_str( ), h->GetSlots( ), h->GetLoad( ), h->GetLoadLimit( ), h->GetAssignCount( ));
+      SendToClient( client, buf, strlen( buf ));
+    }
+    Unlock( );
+    return;
+  }
+
   r = sscanf( buffer, "free %d", &id );
   if( r == 1 )
   {
@@ -168,10 +191,17 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
 
   int cpus;
   char host[256];
-  float load;
-  r = sscanf( buffer, "host %s %d", host, &cpus ); // FIXME: overflow
-  if( r == 2 )
+  float loadlimit;
+  int slots;
+  r = sscanf( buffer, "host %s %d %f %d", host, &cpus, &loadlimit, &slots ); // FIXME: overflow
+  if( r >= 2 )
   {
+    if( r != 3 )
+      loadlimit = LOADLIMIT;
+
+    if( r != 4 )
+      slots = 0;
+
     //Log( "%d: got host %s, %d CPUs", client, host, cpus );
     Lock( );
     if( hosts.find( client ) != hosts.end( ))
@@ -179,11 +209,13 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
     else
     {
       Log( "%d: registered %s", client, host );
-      hosts[client] = new Host( host, cpus );
+      hosts[client] = new Host( host, cpus, loadlimit, slots );
     }
     Unlock( );
     return;
   }
+
+  float load;
   r = sscanf( buffer, "load %f", &load );
   if( r == 1 )
   {

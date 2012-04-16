@@ -3,3 +3,9 @@ SERVER=
 
 # Set USE_SERVER=servername to act as client
 USE_SERVER=
+
+# Only assign jobs to my system when load is below LOADLIMIT
+LOADLIMIT=3.0
+
+# Number of shared cores (0 means 2 * cpus + 1)
+SLOTS=0

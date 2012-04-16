@@ -9,8 +9,9 @@
 
 #include <errno.h> // errno
 #include <time.h>  // clock_gettime
+#include <stdio.h>  // printf
 
-SocketClient::SocketClient( bool excludeself ) : excludeself(excludeself)
+SocketClient::SocketClient( ) : info(false)
 {
   if( sem_init( &host_available, 0, 0 ))
   {
@@ -25,10 +26,6 @@ SocketClient::~SocketClient( )
 
 void SocketClient::Connected( int client )
 {
-  if( excludeself )
-    Send( "-get\n", 5 );
-  else
-    Send( "get\n", 4 );
 }
 
 void SocketClient::Disconnected( int client, bool error )
@@ -36,8 +33,13 @@ void SocketClient::Disconnected( int client, bool error )
   //Log( "%d: client disconnected, error=%d", client, error );
 }
 
-const std::string &SocketClient::GetHost( )
+const std::string &SocketClient::GetHost( bool excludeself )
 {
+  if( excludeself )
+    Send( "-get\n", 5 );
+  else
+    Send( "get\n", 4 );
+
   struct timespec ts;
   if( clock_gettime( CLOCK_REALTIME, &ts ) == -1 )
   {
@@ -63,6 +65,11 @@ const std::string &SocketClient::GetHost( )
 
 void SocketClient::HandleMessage( const int client, const SocketHandler::Message &msg )
 {
+  if( info )
+  {
+    printf( "%s\n", msg.getLine( ).c_str( ));
+    return;
+  }
   if( msg.getLine( ).length( ) < 64 )
   {
     host = msg.getLine( );
@@ -71,5 +78,28 @@ void SocketClient::HandleMessage( const int client, const SocketHandler::Message
   else
     LogError( "strange response received" );
   sem_post( &host_available );
+}
+
+void SocketClient::GetInfo( )
+{
+  info = true;
+  Send( "info\n", 5 );
+  struct timespec ts;
+  if( clock_gettime( CLOCK_REALTIME, &ts ) == -1 )
+  {
+    LogError( "Error getting time" );
+  }
+  ts.tv_sec += 2; // FIXME: use proper eof
+  int s;
+  while(( s = sem_timedwait( &host_available, &ts )) == -1 && errno == EINTR )
+    continue;       /* Restart if interrupted by handler */
+
+  if( s == -1 )
+  {
+    if( errno == ETIMEDOUT )
+      LogWarn( "timeout" );
+    else
+      LogError( "semaphore error" );
+  }
 }
 
