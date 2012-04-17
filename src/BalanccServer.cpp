@@ -153,21 +153,31 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
   if( r == 1 )
   {
     char buf[128];
-    snprintf( buf, sizeof( buf ), "%d: Available Hosts\n", id );
+    snprintf( buf, sizeof( buf ), "%d: balancc - Load Balancer\n", id );
     SendToClient( client, buf, strlen( buf ));
-    snprintf( buf, sizeof( buf ), "%d: ----------------\n", id );
+    snprintf( buf, sizeof( buf ), "%d: °°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°\n", id );
     SendToClient( client, buf, strlen( buf ));
     snprintf( buf, sizeof( buf ), "%d: Hostname         Slots Load/Limit Jobs\n", id );
     SendToClient( client, buf, strlen( buf ));
-    Lock( );
     Host *h = NULL;
+    int total_slots = 0;
+    int total_jobs = 0;
+    Lock( );
     for( iterator_hosts i = hosts.begin( ); i != hosts.end( ); i++ )
     {
       h = (*i).second;
       snprintf( buf, sizeof( buf ), "%d:  %-16.16s  %2d  %2.2f %2.2f  %d\n", id, h->GetName( ).c_str( ), h->GetSlots( ), h->GetLoad( ), h->GetLoadLimit( ), h->GetAssignCount( ));
       SendToClient( client, buf, strlen( buf ));
+      total_slots += h->GetSlots( );
+      total_jobs += h->GetAssignCount( );
     }
     Unlock( );
+    snprintf( buf, sizeof( buf ), "%d: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n", id );
+    SendToClient( client, buf, strlen( buf ));
+    snprintf( buf, sizeof( buf ), "%d: Total %3d hosts   %3d           %3d\n", id, hosts.size( ), total_slots, total_jobs );
+    SendToClient( client, buf, strlen( buf ));
+    snprintf( buf, sizeof( buf ), "%d: ^EOM\n", id );
+    SendToClient( client, buf, strlen( buf ));
     return;
   }
 

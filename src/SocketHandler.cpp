@@ -113,11 +113,6 @@ void SocketHandler::Stop( )
   {
     close( sd );
     sd = 0;
-    if( this->socket )
-    {
-      // FIXME: verify it's a socket
-      unlink( this->socket );
-    }
   }
 }
 
@@ -581,7 +576,7 @@ bool SocketHandler::Daemonize( const char *user, const char *pidfile )
       {
         char buf[16];
         snprintf( buf, sizeof( buf ), "%d\n", pid );
-        write( fd, buf, strlen( buf ));
+        (void) write( fd, buf, strlen( buf ));
         close( fd );
       }
       else
@@ -616,9 +611,9 @@ bool SocketHandler::Daemonize( const char *user, const char *pidfile )
     LogError( "cannot chdir( \"/\" )" );
     return false;
   }
-  freopen( "/dev/null", "r", stdin );
-  freopen( "/dev/null", "w", stdout );
-  freopen( "/dev/null", "w", stderr );
+  (void) freopen( "/dev/null", "r", stdin );
+  (void) freopen( "/dev/null", "w", stdout );
+  (void) freopen( "/dev/null", "w", stderr );
   return true;
 }
 
