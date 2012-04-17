@@ -49,7 +49,7 @@ if [ "$SERVER" != "yes" -a -z "$USE_SERVER" ]; then
   exit 0
 fi
 
-CLIENT_OPTS="-s $USE_SERVER -n $SLOTS -l $LOADLIMMIT"
+CLIENT_OPTS="-s $USE_SERVER -n $SLOTS -l $LOADLIMIT"
 set -e
 
 running()
