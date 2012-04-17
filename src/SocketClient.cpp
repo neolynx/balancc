@@ -67,7 +67,10 @@ void SocketClient::HandleMessage( const int client, const SocketHandler::Message
 {
   if( info )
   {
-    printf( "%s\n", msg.getLine( ).c_str( ));
+    if( msg.getLine( ) == "^EOM" )
+      sem_post( &host_available );
+    else
+      printf( "%s\n", msg.getLine( ).c_str( ));
     return;
   }
   if( msg.getLine( ).length( ) < 64 )
@@ -89,7 +92,7 @@ void SocketClient::GetInfo( )
   {
     LogError( "Error getting time" );
   }
-  ts.tv_sec += 2; // FIXME: use proper eof
+  ts.tv_sec += 2;
   int s;
   while(( s = sem_timedwait( &host_available, &ts )) == -1 && errno == EINTR )
     continue;       /* Restart if interrupted by handler */
