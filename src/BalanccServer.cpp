@@ -31,12 +31,14 @@ void BalanccServer::Disconnected( int client, bool error )
     LogWarn( "%d: unknown client disconnected", client );
   else
   {
-    for( iterator_Slot i = assignment.begin( ); i != assignment.end( ); i++ )
+    for( iterator_Slot i = assignment.begin( ); i != assignment.end( ); )
       if( i->first.client == client )
       {
         Log( "%d:%d slot destroyed: disconnect", i->first.client, i->first.id );
-        assignment.erase( i );
+        assignment.erase( i++ );
       }
+      else
+	i++;
     Log( "%d: unregistered %s", client, h->second->GetName( ).c_str( ));
     delete h->second;
     hosts.erase( client );
@@ -104,15 +106,16 @@ void BalanccServer::Housekeeping( )
 {
   time_t now = time( NULL );
   Lock( );
-  for( iterator_hosts i = hosts.begin( ); i != hosts.end( ); i++ )
+  for( iterator_hosts i = hosts.begin( ); i != hosts.end( ); )
   {
     if( now - (*i).second->LastUpdate( ) > 5 )
     {
       Log( "%d: timeout, disconnecting...", (*i).first );
       Unlock( );
-      DisconnectClient( (*i).first );
-      Lock( );
+      DisconnectClient( (*i++).first );
     }
+    else
+      i++;
   }
   Unlock( );
 }
@@ -171,10 +174,11 @@ void BalanccServer::HandleMessage( const int client, const SocketHandler::Messag
       total_slots += h->GetSlots( );
       total_jobs += h->GetAssignCount( );
     }
+    int total_hosts = hosts.size( );
     Unlock( );
     snprintf( buf, sizeof( buf ), "%d: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n", id );
     SendToClient( client, buf, strlen( buf ));
-    snprintf( buf, sizeof( buf ), "%d: Total %3d hosts   %3d           %3d\n", id, hosts.size( ), total_slots, total_jobs );
+    snprintf( buf, sizeof( buf ), "%d: Total %3d hosts   %3d           %3d\n", id, total_hosts, total_slots, total_jobs );
     SendToClient( client, buf, strlen( buf ));
     snprintf( buf, sizeof( buf ), "%d: ^EOM\n", id );
     SendToClient( client, buf, strlen( buf ));
