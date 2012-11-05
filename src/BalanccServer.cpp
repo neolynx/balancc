@@ -83,8 +83,13 @@ std::string BalanccServer::GetHost( Slot slot, bool self )
   }
   if( h )
   {
+    iterator_Slot i = assignment.find( slot );
     if( assignment.find( slot ) != assignment.end( ))
+    {
       LogError( "%d:%d slot already assigned", slot.client, slot.id );
+      (*i).second->Release( );
+      assignment.erase( slot );
+    }
     else
     {
       if( !h->Assign( ))
