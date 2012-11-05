@@ -1,3 +1,9 @@
+balancc (0.6) lucid; urgency=low
+
+  * Fix race condition
+
+ -- André Roth <neolynx@gmail.com>  Mon, 29 Oct 2012 13:54:30 +0100
+
 balancc (0.5) unstable; urgency=low
 
   * Added options for load limit and slots
