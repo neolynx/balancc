@@ -113,7 +113,7 @@ void BalanccServer::Housekeeping( )
   Lock( );
   for( iterator_hosts i = hosts.begin( ); i != hosts.end( ); )
   {
-    if( now - (*i).second->LastUpdate( ) > 5 )
+    if( difftime( now, (*i).second->LastUpdate( )) > HEARTBEAT * 2 )
     {
       Log( "%d: timeout, disconnecting...", (*i).first );
       Unlock( );

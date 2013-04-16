@@ -19,6 +19,7 @@
 #include "BalanccClient.h"
 #include "SocketClient.h"
 #include "SocketServer.h"
+#include "Host.h"
 
 BalanccClient *client = NULL;
 SocketServer *server = NULL;
@@ -174,7 +175,7 @@ int main( int argc, char *argv[] )
     int c = 0;
     while( client->isUp( ))
     {
-      if( c++ % 5 == 0 )
+      if( c++ % HEARTBEAT == 0 )
         client->SendLoad( );
       sleep( 1 );
     }

@@ -318,7 +318,7 @@ void SocketHandler::Run( )
     }
 
     tmp_fds = fds;
-
+    // FIXME: recalculate fdmax
     struct timeval timeout = { 1, 0 }; // 1 sec
     if( select( fdmax + 1, &tmp_fds, NULL, NULL, &timeout ) == -1 )
     {
@@ -606,11 +606,11 @@ bool SocketHandler::Daemonize( const char *user, const char *pidfile )
     LogError( "setsid failed" );
     return false;
   }
-  if(( chdir( "/" )) < 0 )
-  {
-    LogError( "cannot chdir( \"/\" )" );
-    return false;
-  }
+//  if(( chdir( "/" )) < 0 )
+//  {
+//    LogError( "cannot chdir( \"/\" )" );
+//    return false;
+//  }
   (void) freopen( "/dev/null", "r", stdin );
   (void) freopen( "/dev/null", "w", stdout );
   (void) freopen( "/dev/null", "w", stderr );

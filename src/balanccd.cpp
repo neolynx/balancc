@@ -7,6 +7,8 @@
 
 #include "BalanccServer.h"
 
+#include "Host.h"
+
 #include <unistd.h> // sleep
 #include <signal.h>
 #include <stdio.h>  // printf
@@ -80,7 +82,7 @@ int main( int argc, char *argv[] )
   int c = 0;
   while( server->isUp( ))
   {
-    if( c++ % 5 == 0 )
+    if( c++ % HEARTBEAT == 0 )
       server->Housekeeping( );
     sleep( 1 );
   }

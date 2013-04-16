@@ -16,6 +16,7 @@
 #define SLOTS_PER_CPU    2
 #define SLOTS_ADDITIONAL 1
 #define LOADLIMIT        3.0
+#define HEARTBEAT 5
 
 class Host
 {
